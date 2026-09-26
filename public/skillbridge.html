@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SkillBridge AI – Level up your career</title>
+<style>
+:root{--bg:#fff8e0;--card:#fffdf6;--tx:#3a2c10;--mut:#8a774f;--ac:#f2a900;--acs:#fff1c2;--bd:#f2e2a8;--gold:#ff8a3d;--bad:#c62828;--ok:#0f8a4b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#241d0c;--card:#332911;--tx:#fff3d6;--mut:#c9b789;--ac:#ffc94d;--acs:#3d3116;--bd:#4a3d1a;--gold:#ffb14d;--bad:#ff8a80;--ok:#5ee19b}}
+:root[data-theme="dark"]{--bg:#241d0c;--card:#332911;--tx:#fff3d6;--mut:#c9b789;--ac:#ffc94d;--acs:#3d3116;--bd:#4a3d1a;--gold:#ffb14d;--bad:#ff8a80;--ok:#5ee19b}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--bd)}
+.ring{--p:0;width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--gold) calc(var(--p)*1%),var(--bd) 0);display:grid;place-items:center;flex:none}
+.ring b{width:42px;height:42px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:14px}
+.hud>div:nth-child(2){flex:1}.hud .k{font-size:11px;letter-spacing:.08em;color:var(--mut)}
+.bar{height:8px;background:var(--acs);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--gold));transition:width .6s}
+#mu{border:0;background:var(--acs);border-radius:10px;font-size:18px;padding:6px 10px;cursor:pointer}
+main{max-width:760px;margin:auto;padding:10px 14px 110px}
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));z-index:6}
+.tabs button{flex:1;border:0;background:none;color:var(--mut);font:600 10px inherit;padding:6px 0;cursor:pointer}
+.tabs button span{display:block;font-size:20px}.tabs button.on{color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin:10px 0;animation:up .35s both}
+@keyframes up{from{opacity:0;transform:translateY(10px)}}
+h1,h2{font:800 21px Georgia,serif;margin:6px 0}h3{margin:0 0 4px;font-size:16px}.mut{color:var(--mut);font-size:13px}
+button.p,button.s{font:700 14px inherit;padding:11px 18px;border-radius:12px;cursor:pointer;border:2px solid var(--ac);transition:transform .1s}
+button.p{background:var(--ac);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.25)}button.s{background:none;color:var(--ac)}button:active{transform:translateY(2px)}button:disabled{opacity:.5}
+input,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);font:14px inherit;margin:6px 0}textarea{min-height:130px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.chip{display:inline-block;background:var(--acs);color:var(--ac);padding:3px 10px;border-radius:14px;font-size:12px;margin:2px;font-weight:700}
+.opt{display:block;width:100%;text-align:left;padding:10px;margin:5px 0;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:14px inherit;cursor:pointer}
+.opt.sel{border-color:var(--ac);background:var(--acs)}.opt.ok{border-color:var(--ok);background:var(--acs)}.opt.no{border-color:var(--bad)}
+.big{font:800 42px Georgia,serif;color:var(--ac)}pre{white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace,monospace;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:12px}
+a{color:var(--ac)}ul{padding-left:18px;margin:6px 0}.les p{margin:6px 0 12px}.les h3{color:var(--ac);margin-top:14px}
+.ex{background:var(--acs);border-radius:12px;padding:12px;margin:12px 0;white-space:pre-wrap}
+.done{border-color:var(--ok)}.spin{display:inline-block;width:16px;height:16px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-3px;margin-right:6px}@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;display:none;z-index:9;max-width:90%}
+.ov{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(10,6,30,.88);animation:fi .25s;overflow:hidden;color:#fff;text-align:center}@keyframes fi{from{opacity:0}}
+.burst{position:absolute;width:150vmax;height:150vmax;background:repeating-conic-gradient(rgba(255,197,61,.16) 0 8deg,transparent 8deg 20deg);animation:rot 8s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+.ovc{position:relative;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.2);opacity:0}}
+.ovc .t{font:800 20px Georgia,serif;letter-spacing:.06em;color:#ffc53d}.ovc .num{font:900 84px Georgia,serif;text-shadow:0 0 30px #9b7bff}.ovc .lv{font-size:15px}
+.pt{position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:2px;animation:fly 1.6s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--x),var(--y)) rotate(540deg);opacity:0}}
+.hero{padding:6px 0 4px;text-align:center}
+.hero svg{width:100%;max-width:340px;height:auto;filter:drop-shadow(0 18px 26px rgba(60,30,150,.28))}
+.float{animation:fl 4.5s ease-in-out infinite}@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.float2{animation:fl2 5.2s ease-in-out infinite}@keyframes fl2{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(3deg)}}
+.spin3{animation:sp3 9s linear infinite}@keyframes sp3{to{transform:rotate(360deg)}}
+.mchar{transform-origin:160px 195px;animation:bob 2.4s ease-in-out infinite}@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.wave{transform-origin:198px 132px;animation:wv 1.1s ease-in-out infinite}@keyframes wv{0%,100%{transform:rotate(0)}50%{transform:rotate(-22deg)}}
+.mpop{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:15;background:var(--card);border:2px solid var(--ac);border-radius:50%;padding:4px;box-shadow:0 6px 16px rgba(0,0,0,.18);animation:mpopIn .45s cubic-bezier(.2,1.6,.4,1)}
+.mpop.out{animation:mpopOut .4s ease-in forwards}
+@keyframes mpopIn{from{transform:translateX(60px) scale(.4);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+@keyframes mpopOut{to{transform:translateX(60px) scale(.5);opacity:0}}
+.tagline{font:800 26px/1.2 Georgia,serif;margin:10px 0 4px}.tagline em{color:var(--ac);font-style:normal}
+.pricecard{border:2px solid var(--bd);border-radius:16px;padding:16px;position:relative}
+.pricecard.best{border-color:var(--gold);background:linear-gradient(180deg,var(--acs),var(--card))}
+.pricecard .badge{position:absolute;top:-11px;right:14px;background:var(--gold);color:#3a2600;font:800 11px inherit;padding:3px 10px;border-radius:10px}
+.feat{display:flex;gap:8px;align-items:flex-start;margin:7px 0}.feat span:first-child{font-size:17px}
+.lockbig{text-align:center;padding:30px 10px}.lockbig div:first-child{font-size:38px}
+.hnav{position:sticky;top:0}
+.sec{display:flex;gap:6px;overflow-x:auto;margin:8px 0 2px;padding-bottom:2px}
+.sec button{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px;border-radius:20px;font:700 12px inherit;cursor:pointer}
+.sec button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pricechip{background:linear-gradient(135deg,var(--gold),#ff8a3d);color:#3a2600;font:900 15px inherit;padding:5px 12px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.spark{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:0;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.9;transform:scale(1.3)}}
+.tring{--p:0;width:74px;height:74px;border-radius:50%;background:conic-gradient(var(--ac) calc(var(--p)*1%),var(--bd) 0);display:grid;place-items:center;margin:0 auto}
+.tring b{width:60px;height:60px;border-radius:50%;background:var(--card);display:grid;place-items:center;font:800 20px inherit}
+.pqcard{text-align:center}
+.diffrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.diffrow button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px;border-radius:20px;font:700 12px inherit;cursor:pointer}
+.diffrow button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+</style></head><body>
+<div class="hud"><div class="ring" id="ring"><b id="rp">10</b></div><div><div class="k">CAREER READINESS</div><div id="lvl"><b>Rookie</b></div><div class="bar"><i id="hb"></i></div></div><button id="mu" onclick="mute=!mute;this.textContent=mute?'🔇':'🔊'">🔊</button></div>
+<main id="app"></main><div class="tabs" id="nav"></div><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let S={plans:{ai:false,test:false,cv:false,full:false},done:{},les:{},certs:[],certDone:{},domain:"",tests:{},cv:"",cvRes:null,cvBest:0,made:false,maker:null,co:"",role:"",jd:""};
+const has=k=>S.plans.full||S.plans[k];
+try{Object.assign(S,JSON.parse(localStorage.getItem("sb2")||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem("sb2",JSON.stringify(S))}catch(e){}};
+const toast=m=>{const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display="none",3500)};
+let tab=(S.plans.ai||S.plans.test||S.plans.cv||S.plans.full)?"map":"home",busy="",quiz=null,cur=null,mute=false,AC,qsec=0;
+
+// ---------- Sound effects (Web Audio, no files) ----------
+addEventListener("pointerdown",()=>{try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}});
+function tone(f,t,d,ty="triangle",v=.14,f2){if(mute||!AC)return;const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+t;o.type=ty;o.frequency.setValueAtTime(f,s);if(f2)o.frequency.exponentialRampToValueAtTime(f2,s+d);g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g).connect(AC.destination);o.start(s);o.stop(s+d)}
+const sfx={click:()=>tone(660,0,.06,"square",.05),tick:()=>tone(900,0,.03,"square",.04),
+whoosh:()=>tone(150,0,.5,"sawtooth",.08,1400),
+ok:()=>{sfx.whoosh();[523,659,784,1047].forEach((f,i)=>tone(f,.3+i*.09,.22))},
+level:()=>{sfx.whoosh();[392,523,659,784,1047,1319].forEach((f,i)=>tone(f,.35+i*.11,.4,"triangle",.17));tone(196,.35,1,"sine",.16)},
+chime:()=>{[523,659,784,1047,1319].forEach((f,i)=>tone(f,i*.09,.5,"sine",.1))},
+coin:()=>{tone(988,0,.09,"square",.09);tone(1319,.07,.18,"square",.09)},
+bad:()=>tone(200,0,.25,"sawtooth",.08,90)};
+
+// ---------- Readiness engine ----------
+const nD=()=>Object.keys(S.done).length,nC=()=>Object.keys(S.certDone).length,nT=()=>Object.keys(S.tests).length;
+const R=()=>Math.min(100,10+nD()*2+nC()*3+nT()*4+Math.round((S.cvBest||0)*.2)+(S.made?11:0));
+const PH=()=>[nD()>=12,nC()>=5,nT()>=5&&!!S.cvBest,!!S.made];
+const LV=r=>r<25?"Rookie":r<50?"Explorer":r<75?"Pro":r<100?"Hire-ready":"Legend";
+const snap=()=>[R(),PH()];
+function setHud(v){$("#ring").style.setProperty("--p",v);$("#rp").textContent=v;$("#hb").style.width=v+"%";$("#lvl").innerHTML="<b>"+LV(v)+"</b>"}
+function commit(s,label){
+  save();const n=R(),ph=PH(),np=ph.findIndex((v,i)=>v&&!s[1][i]);
+  if(np>=0)overlay(s[0],n,`🏆 PHASE ${np+1} COMPLETE`,label,1);else if(n>s[0])overlay(s[0],n,`+${n-s[0]} READINESS`,label,0);else render();
+}
+function overlay(o,n,title,label,big){
+  big?sfx.level():sfx.ok();const d=document.createElement("div");d.className="ov";
+  let p="";if(big)for(let i=0;i<40;i++)p+=`<i class="pt" style="--x:${Math.round(Math.random()*700-350)}px;--y:${Math.round(Math.random()*700-450)}px;background:hsl(${Math.random()*360},90%,60%);animation-delay:${Math.random()*.4}s"></i>`;
+  d.innerHTML=`<div class="burst"></div>${p}<div class="ovc"><div class="t">${title}</div><div class="num" id="cn">${o}%</div><div class="lv">${esc(label)} · ${LV(n)}</div><div style="opacity:.6;font-size:12px;margin-top:14px">tap to continue</div></div>`;
+  document.body.appendChild(d);let done=0,last=o;
+  const close=()=>{if(done)return;done=1;d.remove();render();scrollTo(0,0)};d.onclick=close;setTimeout(close,big?4200:2800);
+  const t0=performance.now();(function f(t){if(done)return;const k=Math.min(1,(t-t0-500)/1300),e=k<0?0:k*(2-k),v=Math.round(o+(n-o)*e);
+    const c=$("#cn");if(c)c.textContent=v+"%";setHud(v);if(v!==last){last=v;if(v%2==0)sfx.tick()}if(k<1)requestAnimationFrame(f)})(t0);
+}
+
+// ---------- AI ----------
+async function ai(prompt,q){
+  try{
+    const r=await fetch("/api/public/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+    if(!r.ok)throw new Error("AI request failed");
+    return await r.json();
+  }catch(e){if(!q){toast("AI request failed, try again");sfx.bad()}throw e}
+}
+
+// ---------- Content ----------
+const M=[["Introduction to AI Essentials",[
+["What AI, ML and Generative AI really are","difference between AI, machine learning, deep learning and generative AI; real examples like UPI fraud detection, Netflix recommendations, ChatGPT/Claude"],
+["How LLMs work: tokens, context and hallucination","tokens, context windows, training vs inference, why models hallucinate, how to verify outputs, examples of confident wrong answers"],
+["The AI tools landscape and how to choose","chat assistants (Claude, ChatGPT, Gemini), Copilot, image/video tools, NotebookLM, coding tools; a decision framework by task, cost, privacy"],
+["Responsible AI, ethics and AI careers","bias, privacy, academic integrity, copyright, and the roles AI creates (prompt engineer, AI analyst, automation specialist) with skills and salaries range in India"]]],
+["Prompt Engineering",[
+["The RCTF framework: Role, Context, Task, Format","weak vs strong prompt comparisons with full before/after examples for a student and a startup founder"],
+["Few-shot, chain-of-thought and constraints","how to give examples, request step-by-step reasoning, set constraints and tone; worked maths and marketing examples"],
+["Prompts for studying, work and job hunting","prompt templates for summarising notes, mock interviews, cover letters, CV bullet rewriting, market research, with sample outputs"],
+["Iterate, evaluate and build a prompt library","how to critique outputs, A/B test prompts, keep reusable templates, and avoid common mistakes; include a checklist"]]],
+["Business Process Automation",[
+["Finding processes worth automating (ROI)","how to map trigger-steps-output, score tasks by frequency and risk, calculate hours saved x hourly value; example: invoice reminders at a small business"],
+["No-code tools: Zapier, Make, n8n, Apps Script","how each tool works, when to pick which, pricing tiers, and a step-by-step example flow: Google Form to Sheet to Gmail to WhatsApp alert"],
+["AI agents and smart workflows","difference between automation, AI workflows and agents; example: email triage that classifies, drafts replies and logs tasks; human-in-the-loop"],
+["Build, test, govern and pitch your automation","testing edge cases, logging, security of API keys, measuring results, and packaging a portfolio project or freelance offer with pricing"]]]];
+const TOP=M.flatMap((m,i)=>m[1].map((t,j)=>({id:i+"-"+j,m:m[0],t:t[0],h:t[1]})));
+const TESTS=[{n:"Set 1 · Foundation",c:"TCS NQT, Infosys, Wipro",d:"easy-to-moderate"},{n:"Set 2 · Intermediate",c:"Cognizant, Capgemini, Accenture",d:"moderate"},{n:"Set 3 · Consulting & Analytics",c:"Deloitte, EY, KPMG, Mu Sigma",d:"moderate-to-hard"},{n:"Set 4 · Big Tech",c:"Amazon, Microsoft, Flipkart",d:"hard"},{n:"Set 5 · Elite",c:"Google, McKinsey/BCG-style, CAT",d:"very hard"}];
+const SECS=[["Quant","quantitative aptitude (arithmetic, algebra, P&C, probability)"],["LRDI","logical reasoning and data interpretation (puzzles, arrangements, text tables)"],["Verbal","verbal ability (mini reading passages, para-jumbles, grammar, vocabulary)"]];
+const TABS=[["home","🏠","Home"],["map","🗺️","Map"],["learn","📘","P1 Learn"],["certs","🎓","P2 Certs"],["tests","🧠","P3 Tests"],["cv","📄","P3 CV"],["maker","✨","P4 Maker"]];
+
+function render(){$("#nav").innerHTML=TABS.map(([k,i,l])=>`<button class="${k===tab?"on":""}" onclick="sfx.click();go('${k}')"><span>${i}</span>${l}</button>`).join("");setHud(R());({home,map,learn,certs,tests,cv,maker})[tab]();save()}
+function go(k){tab=k;quiz=null;cur=null;render();scrollTo(0,0)}
+
+function heroSVG(){return `<div class="hero"><svg viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd873"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient>
+<linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c2"/><stop offset="1" stop-color="#ffd873"/></linearGradient>
+</defs>
+<ellipse cx="160" cy="236" rx="100" ry="13" fill="#7a5a1a" opacity=".14"/>
+<g class="float2" style="animation-delay:.2s"><rect x="16" y="46" width="60" height="42" rx="8" fill="url(#g2)" stroke="#f2a900" stroke-width="2"/><rect x="24" y="54" width="44" height="6" rx="3" fill="#ff8a3d"/><rect x="24" y="64" width="30" height="6" rx="3" fill="#f2a900"/><rect x="24" y="74" width="36" height="6" rx="3" fill="#f2a900"/></g>
+<g class="float" style="animation-delay:.5s"><circle cx="252" cy="66" r="26" fill="url(#g2)" stroke="#f2a900" stroke-width="2"/><path d="M240 65 l7 7 15-17" stroke="#c96a00" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g class="float2" style="animation-delay:.9s;transform-origin:70px 170px"><circle cx="70" cy="170" r="16" fill="#fff3c2" stroke="#f2a900" stroke-width="2"/><path d="M63 170 l5 5 9-11" stroke="#ff8a3d" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g class="float" style="animation-delay:.3s"><path d="M258 178 l6 14 14 2-10 10 2 14-12-7-12 7 2-14-10-10 14-2z" fill="#ffd873" stroke="#f2a900" stroke-width="1.5"/></g>
+<g class="mchar">
+<ellipse cx="160" cy="150" rx="46" ry="50" fill="url(#g1)"/>
+<path d="M124 118 q10-26 36-26 q26 0 36 26 q-8-6-36-6 q-28 0-36 6z" fill="#3a2c10"/>
+<circle cx="141" cy="146" r="6" fill="#3a2c10"/><circle cx="179" cy="146" r="6" fill="#3a2c10"/>
+<circle cx="123" cy="158" r="7" fill="#ff8a3d" opacity=".55"/><circle cx="197" cy="158" r="7" fill="#ff8a3d" opacity=".55"/>
+<path d="M136 168 q24 22 48 0" stroke="#3a2c10" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path class="wave" d="M198 132 q26-4 30 16 q2 14-12 16" stroke="#3a2c10" stroke-width="9" fill="none" stroke-linecap="round"/>
+<circle class="wave" cx="219" cy="148" r="10" fill="url(#g1)" stroke="#3a2c10" stroke-width="2"/>
+<path d="M122 190 q38 16 76 0 l-6 34 q-32 12-64 0z" fill="#ff8a3d"/>
+</g>
+</svg></div>`}
+function mascotBadge(){return `<svg viewBox="0 0 100 100" width="46" height="46"><ellipse cx="50" cy="52" rx="34" ry="36" fill="#ffd873" stroke="#f2a900" stroke-width="2.5"/><path d="M24 32 q6-18 26-18 q20 0 26 18 q-6-4-26-4 q-20 0-26 4z" fill="#3a2c10"/><circle cx="39" cy="50" r="4.2" fill="#3a2c10"/><circle cx="61" cy="50" r="4.2" fill="#3a2c10"/><path d="M35 63 q15 14 30 0" stroke="#3a2c10" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`}
+function mascotPop(){
+  const el=document.createElement("div");el.className="mpop";el.innerHTML=mascotBadge();document.body.appendChild(el);
+  setTimeout(()=>el.classList.add("out"),750);setTimeout(()=>el.remove(),1150);
+}
+
+function planCard(key,title,price,desc,feats,best){
+  const on=has(key);
+  return `<div class="pricecard ${best?"best":""}">${best?'<div class="badge">BEST VALUE</div>':""}<div class="row" style="justify-content:space-between;align-items:flex-start"><h3>${title}</h3><span class="pricechip">₹${price}</span></div><p class="mut">${desc}</p>${feats.map(f=>`<div class="feat"><span>✅</span><span>${f}</span></div>`).join("")}<br>${on?`<button class="s" disabled>✓ Unlocked</button>`:`<button class="p" onclick="buy('${key}',${price},'${title.replace(/'/g,"")}')">${busy==="buy"+key?"Processing…":`Buy for ₹${price}`}</button>`}</div>`;
+}
+function buy(key,price,title){
+  if(busy)return;busy="buy"+key;render();sfx.coin();
+  setTimeout(()=>{S.plans[key]=true;busy="";sfx.level();toast(`${title} unlocked!`);save();
+    const d=document.createElement("div");d.className="ov";d.innerHTML=`<div class="burst"></div>${sparkHTML(50)}<div class="ovc"><div class="t">🎉 PURCHASE COMPLETE</div><div class="num" style="font-size:40px">${title}</div><div class="lv">₹${price} · Demo checkout, no real charge</div><div style="opacity:.6;font-size:12px;margin-top:14px">tap to continue</div></div>`;
+    document.body.appendChild(d);const c=()=>{d.remove();go(key==="test"?"tests":key==="cv"?"cv":"learn")};d.onclick=c;setTimeout(c,2600);
+  },600);
+}
+function sparkHTML(n){let p="";for(let i=0;i<n;i++)p+=`<i class="pt" style="--x:${Math.round(Math.random()*700-350)}px;--y:${Math.round(Math.random()*700-450)}px;background:hsl(${Math.random()*360},90%,60%);animation-delay:${Math.random()*.4}s"></i>`;return p}
+function bgSparkles(){let p="";for(let i=0;i<16;i++)p+=`<i class="spark" style="left:${Math.round(Math.random()*100)}%;top:${Math.round(Math.random()*100)}%;animation-delay:${(Math.random()*4).toFixed(2)}s;animation-duration:${(2.5+Math.random()*2).toFixed(2)}s"></i>`;return p}
+function home(){
+  if(!S.seenHome){S.seenHome=1;save();setTimeout(()=>sfx.chime(),150)}
+  $("#app").innerHTML=`<div class="card" style="position:relative;overflow:hidden">${bgSparkles()}${heroSVG()}<div class="tagline" style="text-align:center">Turn <em>study time</em> into a <em>job-ready CV</em></div><p class="mut" style="text-align:center">AI lessons, real certificates, hiring-level aptitude tests, and a CV that beats the ATS filter — gamified, so you can see your readiness score climb.</p></div>
+  <div class="card"><div class="feat"><span>🧠</span><span><b>Phase 3 · Company-difficulty aptitude tests</b> — Quant, LRDI &amp; Verbal in one paper, plus unlimited custom practice.</span></div><div class="feat"><span>📄</span><span><b>Phase 3 · AI CV scoring</b> — a readiness % plus the exact courses and projects to add.</span></div><div class="feat"><span>✨</span><span><b>Phase 4 · JD-matched CV maker</b> — paste a job description, get keywords woven in truthfully.</span></div><div class="feat"><span>🎓</span><span><b>Phase 2 · Free certificates</b> from Google, Anthropic &amp; Coursera, one tap to add to LinkedIn.</span></div><div class="feat"><span>📘</span><span><b>Phase 1 · AI Essentials course</b> — 12 in-depth, example-rich lessons.</span></div></div>
+  <h2 style="padding:0 4px">Choose your plan</h2>
+  <div class="card">${planCard("test","Phase 3 · Test Prep",49,"5 hiring-difficulty aptitude tests + unlimited custom practice.",["Quant + LRDI + Verbal in every test","Modelled on real company papers","Unlimited practice: pick domain, difficulty &amp; per-question timer","Paste-your-own-PYQ mock builder"])}</div>
+  <div class="card">${planCard("cv","Phase 3-4 · Interview &amp; CV Prep",49,"Know where your CV stands, then tailor it per company.",["AI CV readiness score","Gap-filling course &amp; project suggestions","JD-matched CV maker with ATS keywords"])}</div>
+  <div class="card">${planCard("ai","Phase 1-2 · AI Literacy + Certification",49,"Build AI skill and a LinkedIn-ready certificate trail.",["12 in-depth AI &amp; automation lessons","5 free certificates matched to your domain","One-tap add to LinkedIn"])}</div>
+  <div class="card">${planCard("full","All 4 Phases Bundle",149,"Everything above, at a bundle price.",["All 3 plans included","Best value — save ₹","One-time payment, lifetime access"],true)}</div>
+  <p class="mut" style="text-align:center">Already bought something? Use the tabs below to jump straight in.</p>`;
+}
+
+function map(){
+  const ph=PH(),info=[["Phase 1 · AI Course",`${nD()}/12 lessons`,"learn"],["Phase 2 · Certificates",`${nC()}/5 completed`,"certs"],["Phase 3 · Aptitude + CV",`${nT()}/5 tests · CV ${S.cvBest?"analysed":"pending"}`,"tests"],["Phase 4 · CV Maker",S.made?"Tailored CV created":"Not started","maker"]];
+  $("#app").innerHTML=`<div class="card"><h1>Level up your CV</h1><p class="mut">Finish tasks to raise your readiness score. Each win triggers a level-up.</p><p><span class="chip">Lesson +2</span><span class="chip">Certificate +3</span><span class="chip">Test +4</span><span class="chip">CV analysis up to +20</span><span class="chip">Tailored CV +11</span></p></div>`+
+  info.map((x,i)=>`<div class="card ${ph[i]?"done":""}"><div class="row"><div><h3>${ph[i]?"✅ ":""}${x[0]}</h3><div class="mut">${x[1]}</div></div><button class="${ph[i]?"s":"p"}" onclick="sfx.click();go('${x[2]}')">${ph[i]?"Review":"Play"}</button></div></div>`).join("");
+}
+
+function paywall(key,title,desc){$("#app").innerHTML=`<div class="card lockbig"><div>🔒</div><h2>${title}</h2><p class="mut">${desc}</p><button class="p" onclick="go('home')">See pricing</button></div>`}
+
+function learn(){
+  if(!has("ai"))return paywall("ai","AI Literacy course is locked","Unlock 12 in-depth lessons, worked examples and CV lines for ₹49, or get everything in the ₹149 bundle.");
+  if(cur)return lesson();
+  let h="";
+  M.forEach((m,i)=>{h+=`<div class="card"><h3>Module ${i+1} · ${m[0]}</h3>`+TOP.filter(x=>x.id[0]==i).map(x=>`<div style="padding:9px 0;border-top:1px solid var(--bd)"><a href="#" onclick="openL('${x.id}');return false">${S.done[x.id]?"✅":"▶️"} ${x.t}</a></div>`).join("")+`</div>`});
+  $("#app").innerHTML=h;
+}
+async function openL(id){
+  cur=id;sfx.click();render();
+  if(S.les[id])return;busy="l";render();const x=TOP.find(t=>t.id===id);
+  try{S.les[id]=await ai(`Write an in-depth, beginner-friendly lesson titled "${x.t}" (module: ${x.m}) for Indian college students preparing for jobs. The lesson MUST total at least 450 words. Use concrete, real examples (Indian context where natural: ₹, Chennai startups, campus placements). Cover: ${x.h}. Return ONLY JSON: {"intro":"2-3 sentences","sections":[{"h":"heading","p":"3-5 sentence paragraph with a specific example"}] (exactly 5 sections),"example":{"title":"","body":"a worked example step by step, with sample inputs/prompts and outputs where relevant"},"benefits":["3 short bullets: how this helps in jobs and on a CV"],"practice":"one 10-minute exercise","cv_line":"one resume bullet the learner can add after this lesson"}`);save()}catch(e){}
+  busy="";if(cur===id)render();
+}
+function lesson(){
+  const x=TOP.find(t=>t.id===cur),L=S.les[cur];
+  let h=`<button class="s" onclick="cur=null;render()">← Back</button><div class="card les"><div class="mut">${esc(x.m)}</div><h2>${esc(x.t)}</h2>`;
+  if(busy==="l")h+=`<p><span class="spin"></span>Writing your lesson… (10-30 seconds)</p>`;
+  else if(!L)h+=`<p>Couldn't load this lesson.</p><button class="p" onclick="openL('${cur}')">Retry</button>`;
+  else{h+=`<p>${esc(L.intro)}</p>`+(L.sections||[]).map(s=>`<h3>${esc(s.h)}</h3><p>${esc(s.p)}</p>`).join("");
+    if(L.example)h+=`<h3>Worked example: ${esc(L.example.title)}</h3><div class="ex">${esc(L.example.body)}</div>`;
+    h+=`<h3>How this helps you</h3><ul>${(L.benefits||[]).map(b=>`<li>${esc(b)}</li>`).join("")}</ul><h3>10-minute practice</h3><p>${esc(L.practice)}</p><h3>Add to your CV</h3><pre>${esc(L.cv_line)}</pre>`;
+    h+=S.done[cur]?`<p>✅ Completed</p>`:`<button class="p" onclick="doneL()">Complete lesson (+2)</button>`}
+  $("#app").innerHTML=h+`</div>`;
+}
+function doneL(){const s=snap();S.done[cur]=1;commit(s,"Lesson complete")}
+
+function certs(){
+  if(!has("ai"))return paywall("ai","Certificates are locked","Unlock 5 free certificates matched to your domain, plus the AI course, for ₹49.");
+  let h=`<div class="card"><h2>Phase 2 · Free certificates</h2><p class="mut">Enter your domain to get 5 free courses from Google Skills, Anthropic and Coursera. Complete them, tick them off (+3 each), then add to LinkedIn.</p><input id="dom" placeholder="e.g. Data Analytics, Digital Marketing, Cloud, Finance" value="${esc(S.domain)}"><button class="p" ${busy==="c"?"disabled":""} onclick="findCerts()">${busy==="c"?"Searching…":"Find certifications"}</button></div>`;
+  S.certs.forEach((c,i)=>{const q=encodeURIComponent(c.search||c.title),ok=S.certDone[c.title];
+    const src=/google/i.test(c.provider)?`https://www.cloudskillsboost.google/catalog?keywords=${q}`:/anthropic/i.test(c.provider)?`https://anthropic.skilljar.com/`:`https://www.coursera.org/search?query=${q}&productDifficultyLevel=Beginner`;
+    const li=`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(c.title)}&organizationName=${encodeURIComponent(c.provider)}`;
+    h+=`<div class="card ${ok?"done":""}"><span class="chip">${esc(c.provider)}</span><h3>${esc(c.title)}</h3><p class="mut">${esc(c.why)}</p><div class="row"><span><a href="${src}" target="_blank" rel="noopener">Enroll</a> · <a href="${li}" target="_blank" rel="noopener">Add to LinkedIn</a></span>${ok?"✅ Done":`<button class="p" onclick="certDone(${i})">I completed it (+3)</button>`}</div></div>`});
+  $("#app").innerHTML=h;
+}
+async function findCerts(){
+  const d=$("#dom").value.trim();if(!d)return toast("Enter a domain first");
+  S.domain=d;busy="c";render();
+  try{const r=await ai(`Return ONLY JSON: an array of exactly 5 objects {title, provider, why, search}. Recommend real free (or free-to-audit) courses/certificates for a student targeting the domain "${d}". Mix providers: "Google Skills" (Google Cloud Skills Boost / Grow with Google), "Anthropic" (Anthropic Academy e.g. AI Fluency) and "Coursera". Titles must be real, well-known course names. why = one sentence on hiring value. search = keywords to find it in that provider's catalogue.`);S.certs=Array.isArray(r)?r.slice(0,5):[];S.certDone={}}catch(e){}
+  busy="";render();
+}
+function certDone(i){const s=snap();S.certDone[S.certs[i].title]=1;commit(s,"Certificate completed")}
+
+// ---------- Aptitude engine (always starts: local generators + AI + fallback bank) ----------
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,pk=a=>a[rnd(0,a.length-1)],sh=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+const gcd=(a,b)=>b?gcd(b,a%b):a,fmt=x=>String(+x.toFixed(2)),Cb=(n,r)=>{let v=1;for(let k=1;k<=r;k++)v=v*(n-r+k)/k;return Math.round(v)},Fa=n=>n<2?1:n*Fa(n-1);
+const mk=(q,ans,e)=>{const A=fmt(ans),c=[...new Set(sh([ans+1,ans-1,ans+2,ans-2,ans*1.1,ans*.9,ans*1.2,ans*.8,ans*1.5,ans+5,ans-5]).map(fmt))].filter(x=>x!==A&&(ans<0||+x>=0)).slice(0,3),o=sh([A,...c]);return{q,o,a:o.indexOf(A),e}};
+const mkS=(q,A,alts,e)=>{const o=sh([A,...[...new Set(alts)].filter(x=>x!==A).slice(0,3)]);return{q,o,a:o.indexOf(A),e}};
+const QT=[
+L=>{const p=5*rnd(2,4+L*2),d=5*rnd(1,3+L),A=(1+p/100)*(1-d/100)*100-100;return mk(`A number is increased by ${p}% and the result is then decreased by ${d}%. What is the net percentage change (in %)?`,A,`Net = (1+${p/100})×(1−${d/100}) − 1 = ${fmt(A)}%`)},
+L=>{const m=5*rnd(4,8+L),d=5*rnd(1,3),A=(1+m/100)*(1-d/100)*100-100;return mk(`A shopkeeper marks goods ${m}% above cost and offers a ${d}% discount. Find his profit percentage.`,A,`SP = 1+${m/100} × (1−${d/100}) of CP → profit ${fmt(A)}%`)},
+L=>{const a=rnd(6,12+L*6),b=rnd(6,18+L*6);return mk(`A alone can finish a job in ${a} days and B alone in ${b} days. Working together, in how many days (2 decimals) will they finish?`,a*b/(a+b),`Together = ab/(a+b) = ${a}×${b}/${a+b}`)},
+L=>{const s1=rnd(40,60+L*10),s2=rnd(30,50+L*10),l1=rnd(100,200+L*50),l2=rnd(100,200+L*50);return mk(`Two trains of length ${l1} m and ${l2} m run in opposite directions at ${s1} km/h and ${s2} km/h. In how many seconds (2 decimals) do they cross each other?`,(l1+l2)/((s1+s2)*5/18),`Relative speed = ${s1+s2} km/h = ${fmt((s1+s2)*5/18)} m/s; time = ${l1+l2}/speed`)},
+L=>{const P=100*rnd(20,50+L*20),r=rnd(5,10+L);return mk(`Find the difference (in ₹) between compound and simple interest on ₹${P} at ${r}% per annum for 2 years.`,P*r*r/10000,`Difference = P(r/100)² = ${P}×${r}²/10000`)},
+L=>{const n=rnd(5,8+L),x=rnd(20,40),k=rnd(10,30),m=k+rnd(10,40);return mk(`The average of ${n} numbers is ${x}. If one number ${k} is replaced by ${m}, what is the new average?`,x+(m-k)/n,`New avg = ${x} + (${m}−${k})/${n}`)},
+L=>{const p=rnd(40,60),q=p+rnd(20,40),m=rnd(1,4),n=rnd(2,5);return mk(`Rice at ₹${p}/kg and ₹${q}/kg is mixed in the ratio ${m}:${n}. What is the cost per kg of the mixture (2 decimals)?`,(p*m+q*n)/(m+n),`(${p}×${m}+${q}×${n})/${m+n}`)},
+L=>{const n=rnd(6,8+L),r=rnd(3,4);return mk(`In how many ways can ${r} people out of ${n} be seated in a row of ${r} chairs (order matters)?`,Fa(n)/Fa(n-r),`${n}P${r} = ${n}!/${n-r}!`)},
+L=>{const a=rnd(5,7),b=rnd(3,5);return mk(`A committee of 3 is formed from ${a} men and ${b} women with at least one woman. In how many ways?`,Cb(a+b,3)-Cb(a,3),`Total C(${a+b},3) − all-men C(${a},3)`)},
+L=>{const r=rnd(4,7),b=rnd(3,6),nu=r*(r-1),de=(r+b)*(r+b-1),g=gcd(nu,de),A=`${nu/g}/${de/g}`,g2=gcd(b*(b-1),de);return mkS(`A bag has ${r} red and ${b} blue balls. Two balls are drawn without replacement. What is the probability both are red?`,A,[`${nu/g+1}/${de/g}`,`${r}/${r+b}`,`${b*(b-1)/g2}/${de/g2}`,`${nu/g*2}/${de/g+3}`],`P = C(${r},2)/C(${r+b},2) = ${A}`)},
+L=>{const a=rnd(2,9),d=rnd(2,5),k=rnd(1,3),t=[a];let df=d;for(let i=0;i<5;i++){t.push(t[i]+df);df+=k}return mk(`Find the next term: ${t.slice(0,5).join(", ")}, ?`,t[5],`Differences rise by ${k} each step: ${t[5]-t[4]} is added next`)},
+L=>{const b=pk([2,3,7,8]),n=rnd(20,300+L*100);let v=1;for(let i=0;i<n;i++)v=v*b%10;return mkS(`What is the last digit of ${b}^${n}?`,String(v),sh([0,1,2,3,4,5,6,7,8,9].map(String)).slice(0,4),`Last digits of powers of ${b} repeat in a cycle of 4; ${n} mod 4 gives ${v}`)},
+L=>{const s=rnd(8,14+L*2),c=rnd(2,4+L),d=s+c,u=s-c;return mk(`A boat's speed downstream is ${d} km/h and upstream is ${u} km/h. What is the speed of the boat in still water (km/h)?`,(d+u)/2,`Boat speed = (downstream + upstream)/2 = (${d}+${u})/2`)},
+L=>{const A=rnd(20,35+L*3),B=A+rnd(3,10+L),p=rnd(3,8),f=rnd(3,8),pa=A-p,pb=B-p,g1=gcd(pa,pb),fa=A+f,fb=B+f,g2=gcd(fa,fb);return mk(`${p} years ago, the ratio of A's age to B's age was ${pa/g1}:${pb/g1}. ${f} years from now, their ages will be in the ratio ${fa/g2}:${fb/g2}. B is older than A. Find A's current age (in years).`,A,`Two ratio equations in A and B solve to A = ${A}, B = ${B}`)},
+L=>{const r1=rnd(2,5),r2=r1+rnd(1,4),sum=r1+r2,prod=r1*r2;return mkS(`A quadratic equation has roots ${r1} and ${r2}. Which equation is this, in the form x² − (sum)x + (product) = 0?`,`x² − ${sum}x + ${prod} = 0`,[`x² + ${sum}x + ${prod} = 0`,`x² − ${sum}x − ${prod} = 0`,`x² − ${sum+1}x + ${prod} = 0`],`Sum of roots = ${sum}, product = ${prod}`)},
+L=>{const e1=rnd(3,6),e2=e1+rnd(1,4),days=rnd(6,10+L*2);return mk(`A and B have an efficiency ratio of ${e1}:${e2} (B is faster). Working together they finish a job in ${days} days. In how many days (2 decimals) can A alone finish it?`,days*(e1+e2)/e1,`A's days = together × (ratio sum)/A's ratio = ${days}×${e1+e2}/${e1}`)}];
+const enc=(w,k)=>[...w].map(c=>String.fromCharCode((c.charCodeAt(0)-65+k)%26+65)).join("");
+const DAY=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const LT=[
+L=>{const T=pk([[3,4,5],[6,8,10],[5,12,13],[8,15,17]]),z=rnd(2,6);return mk(`A man walks ${T[0]+z} km north, then ${T[1]} km east, then ${z} km south. How far (km) is he from the start?`,T[2],`Net north = ${T[0]}, east = ${T[1]}; distance = √(${T[0]}²+${T[1]}²) = ${T[2]}`)},
+L=>{const w=sh(["MANGO","TIGER","PLANT","BRAVE","CLOUD","SMILE"]),k=rnd(1,4);return mkS(`In a certain code, ${w[0]} is written as ${enc(w[0],k)}. How is ${w[1]} written in that code?`,enc(w[1],k),[enc(w[1],k+1),enc(w[1],k-1<1?5:k-1),[...enc(w[1],k)].reverse().join("")],`Every letter shifts forward by ${k}`)},
+L=>{const p=rnd(5,12),q=rnd(8,15);return mk(`In a row, Ravi is ${p}th from the left and ${q}th from the right. How many people are in the row?`,p+q-1,`Total = ${p}+${q}−1`)},
+L=>{const a=rnd(200,400),b=a+rnd(20,150);return mk(`A company's sales were ₹${a} lakh in 2024 and ₹${b} lakh in 2025. What is the percentage growth (2 decimals)?`,(b-a)/a*100,`(${b}−${a})/${a}×100`)},
+L=>{const d1=rnd(1,10),d2=d1+rnd(10,20),s=rnd(0,6),A=DAY[(s+d2-d1)%7];return mkS(`If the ${d1}th of a month is a ${DAY[s]}, what day is the ${d2}th of the same month?`,A,DAY.filter(x=>x!==A),`${d2-d1} days later → shift of ${(d2-d1)%7} days`)},
+L=>{const h=rnd(1,11),m=pk([10,20,30,40,50]),a=Math.abs(30*h-5.5*m),A=Math.min(a,360-a);return mk(`What is the smaller angle (in degrees) between the hands of a clock at ${h}:${String(m).padStart(2,"0")}?`,A,`|30×${h} − 5.5×${m}| = ${fmt(a)}°`)}];
+const VB=[["Choose the synonym of EPHEMERAL","Lasting|Short-lived|Ancient|Massive",1,"Ephemeral means lasting a very short time."],["Choose the antonym of CANDID","Frank|Guarded|Honest|Open",1,"Candid = frank; the opposite is guarded."],["Neither of the candidates ___ selected.","was|were|are|have been",0,"'Neither' takes a singular verb."],["One word for a person who loves books","Bibliophile|Philanthropist|Misanthrope|Insomniac",0,"Bibliophile = lover of books."],["'To break the ice' means","start a conversation in an awkward setting|damage something|feel very cold|end a friendship",0,"An idiom for easing initial tension."],["Choose the synonym of METICULOUS","Careless|Thorough|Rapid|Hasty",1,"Meticulous = very careful and precise."],["Choose the correct spelling","Accomodate|Accommodate|Acommodate|Acomodate",1,"Double c and double m."],["She is good ___ mathematics.","at|in|on|with",0,"'Good at' is the fixed collocation."],["Choose the antonym of VERBOSE","Wordy|Concise|Lengthy|Elaborate",1,"Verbose = using too many words."],["The manager insisted ___ finishing the report today.","on|at|for|to",0,"'Insist on' is correct."],["Choose the synonym of PRAGMATIC","Practical|Idealistic|Dreamy|Emotional",0,"Pragmatic = practical and realistic."],["Choose the grammatically correct sentence","He don't know the answer.|He doesn't knows the answer.|He doesn't know the answer.|He not know the answer.",2,"Third-person singular takes 'doesn't' + base verb."]].map(x=>({q:x[0],o:x[1].split("|"),a:x[2],e:x[3]}));
+const okQ=q=>q&&typeof q.q==="string"&&Array.isArray(q.o)&&q.o.length>=3&&Number.isInteger(q.a)&&q.a>=0&&q.a<q.o.length;
+async function aiQs(k,T,n){
+  for(let t=0;t<2;t++){try{
+    const r=await ai(`Create ${n} original, CHALLENGING multiple-choice ${SECS[k][1]} questions at ${T.d} difficulty, modelled on the real pattern, topics and question types of ${T.c} online hiring assessments (write new questions; do not reproduce real ones). Require genuine multi-step reasoning — no single-step recall or trivial questions, and nothing solvable by guessing in 5 seconds. Each is self-contained plain text (no images), has exactly 4 options and exactly one unambiguous correct option, and every answer must be carefully double-checked for correctness before returning it. Return ONLY JSON: [{"q":"...","o":["A","B","C","D"],"a":0,"e":"short worked explanation"}] where a is the index of the correct option.`,1);
+    const v=(Array.isArray(r)?r:[]).filter(okQ);if(v.length>=6)return v.slice(0,n)}catch(e){if(e&&e.code==="not_granted")break}}
+  return[]}
+
+function tests(){
+  if(!has("test"))return paywall("test","Aptitude tests are locked","Unlock 5 hiring-difficulty tests (Quant + LRDI + Verbal) for ₹49.");
+  if(quiz)return renderQuiz();
+  if(prac)return renderPractice();
+  let h=`<div class="card"><h2>Phase 3 · Aptitude series</h2><p class="mut">5 sets, each ONE test with 3 sections — Quant, LRDI, Verbal — 10 challenging questions per section. Quant is generated instantly with verified answers; LRDI and Verbal are AI-written at hard, multi-step difficulty, with a built-in practice bank as backup, so every test always starts. Finish a set for +4.</p></div>`;
+  TESTS.forEach((t,i)=>{const b=S.tests[i];h+=`<div class="card ${b!=null?"done":""}"><div class="row"><div><h3>${t.n}</h3><div class="mut">${t.c} · ${t.d}</div></div>${b!=null?`<span class="chip">Best ${b}/30</span>`:""}</div><p class="mut">Real papers: ${t.c.split(",").map(c=>`<a href="https://www.google.com/search?q=${encodeURIComponent(c.trim()+" aptitude previous year questions")}" target="_blank" rel="noopener">${esc(c.trim())}</a>`).join(" · ")}</p><button class="p" ${busy?"disabled":""} onclick="startTest(${i})">${busy==="t"+i?"Building 30 questions… (up to 30s)":"Start"}</button></div>`});
+  h+=`<div class="card"><h3>Practice with real PYQs</h3><p class="mut">Paste questions from a real previous-year paper you have (with or without the answer key). AI turns them into a mock test. This one doesn't change your readiness score.</p><textarea id="pyq" placeholder="Paste questions and options here…"></textarea><button class="p" ${busy?"disabled":""} onclick="importPYQ()">${busy==="p"?"Building mock…":"Build mock from my PYQs"}</button></div>`;
+  h+=`<div class="card"><h3>🏋️ Unlimited practice zone</h3><p class="mut">Pick a domain, difficulty and a per-question timer, and generate a fresh practice set any time. Doesn't affect your readiness score.</p>
+  <div class="mut" style="margin-top:6px">Domain</div><input id="pd" oninput="pcfg.domain=this.value" placeholder="e.g. Data Structures, Marketing, Banking Awareness, Pure Quant" value="${esc(pcfg.domain)}">
+  <div class="mut">Difficulty</div><div class="diffrow">${["Easy","Medium","Hard","Expert"].map(d=>`<button class="${pcfg.diff===d?"on":""}" onclick="pcfg.diff='${d}';render()">${d}</button>`).join("")}</div>
+  <div class="mut">Per-question timer</div><div class="diffrow">${[["0","Off"],["30","30s"],["45","45s"],["60","60s"],["90","90s"]].map(([v,l])=>`<button class="${String(pcfg.timer)===v?"on":""}" onclick="pcfg.timer=${v};render()">${l}</button>`).join("")}</div>
+  <div class="mut">Questions</div><div class="diffrow">${[10,15,20].map(n=>`<button class="${pcfg.n===n?"on":""}" onclick="pcfg.n=${n};render()">${n}</button>`).join("")}</div>
+  <button class="p" style="margin-top:8px" ${busy==="pz"?"disabled":""} onclick="startPractice()">${busy==="pz"?"Generating…":"Start practice"}</button></div>`;
+  $("#app").innerHTML=h;
+}
+let prac=null,pcfg={domain:"",diff:"Medium",timer:0,n:10},pInt=null;
+async function startPractice(){
+  const d=(pcfg.domain||"").trim();if(!d)return toast("Enter a domain first");
+  pcfg.domain=d;busy="pz";render();
+  try{let r,ok=false;
+    for(let t=0;t<2&&!ok;t++){
+      r=await ai(`Create ${pcfg.n} original, high-quality multiple-choice aptitude/knowledge questions on the domain "${d}" at ${pcfg.diff} difficulty for a student preparing for job interviews and hiring tests. Mix conceptual and applied questions; avoid trivial one-word recall unless the difficulty is Easy. Each question is self-contained plain text, has exactly 4 options and exactly one correct, unambiguous option, double-checked for correctness. Return ONLY a raw JSON array (no wrapper object, no markdown fences): [{"q":"...","o":["A","B","C","D"],"a":0,"e":"short explanation"}].`,1);
+      if(!Array.isArray(r)&&r&&Array.isArray(r.questions))r=r.questions;
+      ok=Array.isArray(r)&&r.filter(okQ).length>=5;
+    }
+    const qs=(Array.isArray(r)?r:[]).filter(okQ);if(qs.length<5)throw 0;
+    prac={qs,idx:0,ans:[],correct:0,timer:+pcfg.timer,left:+pcfg.timer,dom:d,diff:pcfg.diff}}catch(e){toast(e&&e.code==="not_granted"?"Allow AI access to use this feature":"Couldn't build that practice set. Try a different domain or retry.")}
+  busy="";render();scrollTo(0,0);
+  if(prac)armTimer();
+}
+function armTimer(){
+  clearInterval(pInt);if(!prac||!prac.timer)return;
+  prac.left=prac.timer;pInt=setInterval(()=>{
+    prac.left--;const el=$("#pleft"),ring=$("#ptr");
+    if(el)el.textContent=prac.left;if(ring)ring.style.setProperty("--p",Math.max(0,prac.left/prac.timer*100));
+    if(prac.left<=5&&prac.left>0)sfx.tick();
+    if(prac.left<=0){clearInterval(pInt);sfx.bad();practAnswer(-1)}
+  },1000);
+}
+function practAnswer(j){
+  if(!prac||prac.locked)return;clearInterval(pInt);prac.locked=true;
+  const q=prac.qs[prac.idx];prac.ans[prac.idx]=j;if(j===q.a){prac.correct++;sfx.ok()}else sfx.bad();
+  renderPractice();
+  setTimeout(()=>{if(!prac)return;prac.idx++;prac.locked=false;if(prac.idx>=prac.qs.length){prac.done=true}render();scrollTo(0,0);if(!prac.done)armTimer()},1400);
+}
+function renderPractice(){
+  if(prac.done){const pct=Math.round(prac.correct/prac.qs.length*100);
+    $("#app").innerHTML=`<div class="card pqcard"><h2>Practice complete</h2><div class="tring" style="--p:${pct}"><b>${pct}%</b></div><p>${prac.correct}/${prac.qs.length} correct · ${esc(prac.dom)} · ${esc(prac.diff)}</p><button class="p" onclick="prac=null;render()">Back to Tests</button> <button class="s" onclick="prac=null;render();startPractice()">New set</button></div>`+
+    prac.qs.map((q,k)=>`<div class="card"><b>Q${k+1}.</b> ${esc(q.q)}<div class="mut">Your answer: ${prac.ans[k]==null||prac.ans[k]<0?"—":esc(q.o[prac.ans[k]])} ${prac.ans[k]===q.a?"✅":"❌ Correct: "+esc(q.o[q.a])}</div><div class="mut">💡 ${esc(q.e)}</div></div>`).join("");
+    return}
+  const q=prac.qs[prac.idx],lk=prac.locked,ans=prac.ans[prac.idx];
+  $("#app").innerHTML=`<div class="card"><div class="row"><span class="chip">${esc(prac.dom)} · ${esc(prac.diff)}</span><span class="mut">Q${prac.idx+1}/${prac.qs.length}</span></div>
+  ${prac.timer?`<div class="tring" id="ptr" style="--p:${prac.left/prac.timer*100};margin:10px auto"><b id="pleft">${prac.left}</b></div>`:""}
+  <h3 style="margin-top:10px">${esc(q.q)}</h3>${q.o.map((o,j)=>{let c="opt";if(lk){if(j===q.a)c+=" ok";else if(ans===j)c+=" no"}return `<button class="${c}" ${lk?"disabled":""} onclick="sfx.click();practAnswer(${j})">${"ABCD"[j]}. ${esc(o)}</button>`}).join("")}${lk?`<div class="mut">💡 ${esc(q.e)}</div>`:""}</div>
+  <button class="s" onclick="clearInterval(pInt);prac=null;render()">Exit practice</button>`;
+}
+
+async function startTest(i){
+  busy="t"+i;render();const T=TESTS[i];
+  const qa=sh(QT).slice(0,10).map(f=>({...f(i),s:0}));
+  const [lr,vb]=await Promise.all([aiQs(1,T,10),aiQs(2,T,10)]);
+  const src=a=>a.length>=10?"AI":a.length?"AI + bank":"bank";
+  const L=lr.map(q=>({...q,s:1})),V=vb.map(q=>({...q,s:2})),lt=sh(LT),vt=sh(VB);
+  let a=0;while(L.length<10)L.push({...lt[a++%lt.length](i),s:1});
+  a=0;while(V.length<10)V.push({...vt[a++%vt.length],s:2});
+  quiz={i,nm:T.n,qs:[...qa,...L,...V],ans:{},sub:false,src:`Quant: generated · LRDI: ${src(lr)} · Verbal: ${src(vb)}`};
+  qsec=0;busy="";render();scrollTo(0,0);
+}
+async function importPYQ(){
+  const t=($("#pyq")||{}).value||"";if(t.trim().length<80)return toast("Paste at least a few questions first");
+  busy="p";render();
+  try{const r=await ai(`The user pasted questions from real previous-year papers. Convert each into JSON, keeping the question wording exactly as pasted. If an answer key is present use it; otherwise solve carefully and give the correct option. If a question has no options, write 4 options with one correct. Return ONLY JSON: [{"q":"...","o":["..."],"a":correctIndex,"e":"short explanation","sn":"Quant|LRDI|Verbal|Other"}]. At most 40 questions.\n\n${t.slice(0,9000)}`);
+    const qs=(Array.isArray(r)?r:[]).filter(okQ).map(q=>({...q,s:0,sn:q.sn||"PYQ"}));if(!qs.length)throw 0;
+    qs.sort((x,y)=>x.sn<y.sn?-1:1);quiz={i:-1,custom:1,nm:"Your PYQ mock",qs,ans:{},sub:false}}catch(e){toast("Couldn't read those questions. Check the format and retry.")}
+  qsec=0;busy="";render();scrollTo(0,0);
+}
+function renderQuiz(){
+  const {qs,ans,sub}=quiz,lab=q=>q.sn||SECS[q.s][0],secs=[...new Set(qs.map(lab))];
+  if(qsec>=secs.length)qsec=0;
+  let h="";
+  if(sub){const g={};qs.forEach((q,k)=>{const l=lab(q);g[l]=g[l]||[0,0];g[l][1]++;if(ans[k]===q.a)g[l][0]++});const tot=qs.filter((q,k)=>ans[k]===q.a).length;
+    h+=`<div class="card"><h2>Result — ${esc(quiz.nm)}</h2><div class="big">${tot}/${qs.length}</div><p>${Object.entries(g).map(([l,v])=>`${esc(l)}: <b>${v[0]}/${v[1]}</b>`).join(" · ")}</p><button class="p" onclick="quiz=null;render()">Back to tests</button></div>`;
+  }else{
+    h+=`<div class="card"><h2>${esc(quiz.nm)}</h2><div class="mut">${Object.keys(ans).length}/${qs.length} answered${quiz.src?" · "+esc(quiz.src):""}</div></div>`;
+  }
+  h+=`<div class="sec">${secs.map((s,i)=>{const c=qs.filter(q=>lab(q)===s).length,an=qs.filter((q,k)=>lab(q)===s&&ans[k]!=null).length;return `<button class="${i===qsec?"on":""}" onclick="sfx.click();qsec=${i};renderQuiz()">${esc(s)} ${sub?"":`${an}/${c}`}</button>`}).join("")}</div>`;
+  qs.forEach((q,k)=>{if(lab(q)!==secs[qsec])return;
+    h+=`<div class="card"><b>Q${k+1}.</b> ${esc(q.q).replace(/\n/g,"<br>")}`+q.o.map((o,j)=>{let c="opt";if(sub){if(j===q.a)c+=" ok";else if(ans[k]===j)c+=" no"}else if(ans[k]===j)c+=" sel";return `<button class="${c}" ${sub?"disabled":""} onclick="sfx.click();quiz.ans[${k}]=${j};renderQuiz()">${"ABCD"[j]||j+1}. ${esc(o)}</button>`}).join("")+(sub?`<div class="mut">💡 ${esc(q.e)}</div>`:"")+`</div>`});
+  if(!sub){const secs2=secs;h+=`<div class="row">${qsec>0?`<button class="s" onclick="qsec--;renderQuiz();scrollTo(0,0)">← Prev section</button>`:"<span></span>"}${qsec<secs2.length-1?`<button class="s" onclick="qsec++;renderQuiz();scrollTo(0,0)">Next section →</button>`:`<button class="p" onclick="submitQuiz()">Submit test</button>`}</div><button class="s" style="margin-top:8px" onclick="quiz=null;render()">Exit</button>`}
+  $("#app").innerHTML=h;
+}
+function submitQuiz(){
+  const {qs,ans,i}=quiz,t=qs.filter((q,k)=>ans[k]===q.a).length;
+  if(quiz.custom){quiz.sub=true;sfx.ok();renderQuiz();scrollTo(0,0);return}
+  const s=snap();quiz.sub=true;if(S.tests[i]==null||t>S.tests[i])S.tests[i]=t;commit(s,`${quiz.nm}: ${t}/${qs.length}`);
+}
+
+// ---------- CV ----------
+const cvBox=()=>`<textarea id="cvt" placeholder="Paste your CV text here, or upload a .txt / .pdf below">${esc(S.cv)}</textarea><input type="file" id="cvf" accept=".txt,.md,.pdf" onchange="readCV(this.files[0])">`;
+async function readCV(f){
+  if(!f)return;
+  try{if(/\.pdf$/i.test(f.name)){
+      if(!window.pdfjsLib)await new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let t="";
+      for(let p=1;p<=pdf.numPages;p++){const c=await(await pdf.getPage(p)).getTextContent();t+=c.items.map(x=>x.str).join(" ")+"\n"}S.cv=t.trim()
+    }else S.cv=(await f.text()).trim();
+    if(!S.cv)throw 0;toast("CV loaded")}catch(e){toast("Couldn't read that file. Paste your CV text instead.")}
+  render();
+}
+function cv(){
+  if(!has("cv"))return paywall("cv","CV analyser is locked","Unlock the AI CV readiness score and gap-filling suggestions for ₹49.");
+  const r=S.cvRes;
+  let h=`<div class="card"><h2>Phase 3 · CV analyser</h2><p class="mut">AI scores your CV, then suggests courses and projects to add. Your first analysis gives up to +20.</p>${cvBox()}<input id="cvd" placeholder="Target domain / role (e.g. Data Analyst)" value="${esc(S.domain)}"><button class="p" ${busy==="v"?"disabled":""} onclick="scoreCV()">${busy==="v"?"Analysing…":"Analyse my CV"}</button></div>`;
+  if(r){const L=(t,a,f)=>a&&a.length?`<div class="card"><h3>${t}</h3><ul>${a.map(f).join("")}</ul></div>`:"";
+    h+=`<div class="card"><div class="mut">AI CV score</div><div class="big">${esc(r.score)}%</div><div class="bar"><i style="width:${+r.score||0}%"></i></div><p>${esc(r.summary)}</p></div>`+L("Strengths",r.strengths,x=>`<li>${esc(x)}</li>`)+L("Gaps to fix",r.gaps,x=>`<li>${esc(x)}</li>`)+L("Courses to take and add",r.courses,x=>`<li><b>${esc(x.title)}</b> (${esc(x.provider)})</li>`)+L("Projects to build and add",r.projects,x=>`<li><b>${esc(x.title)}</b>: ${esc(x.desc)}</li>`)+L("Stronger bullets",r.bullets,x=>`<li>${esc(x)}</li>`)+`<button class="p" onclick="go('maker')">Tailor CV to a company →</button>`}
+  $("#app").innerHTML=h;
+}
+async function scoreCV(){
+  S.cv=$("#cvt").value.trim();S.domain=$("#cvd").value.trim()||S.domain;
+  if(S.cv.length<80)return toast("Paste or upload your CV first");
+  busy="v";render();const s=snap();
+  try{const r=await ai(`You are a strict recruiter and ATS expert. Score this CV's readiness (0-100) for the target domain "${S.domain||"general entry-level roles"}". Be honest; most student CVs score 35-70. Return ONLY JSON: {"score":number,"summary":"2 sentences","strengths":[3 strings],"gaps":[4 strings],"courses":[{"title","provider"} x4 real courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 rewritten weak bullets from the CV with metric placeholders like [X%]]}.\n\nCV:\n${S.cv.slice(0,7000)}`);
+    S.cvRes=r;S.cvBest=Math.max(S.cvBest||0,Math.round(+r.score||0));busy="";commit(s,"CV analysed");return}catch(e){}
+  busy="";render();
+}
+
+// ---------- CV maker ----------
+function maker(){
+  if(!has("cv"))return paywall("cv","CV maker is locked","Unlock the JD-matched CV maker along with CV scoring for ₹49.");
+  const m=S.maker;
+  let h=`<div class="card"><h2>Phase 4 · Company CV maker</h2><p class="mut">Add company, role and JD. AI mirrors the JD's keywords in truthful wording so your CV clears ATS filters. First CV gives +11.</p><input id="co" placeholder="Company" value="${esc(S.co)}"><input id="ro" placeholder="Role" value="${esc(S.role)}"><textarea id="jd" placeholder="Paste the full job description">${esc(S.jd)}</textarea><div class="mut">Your CV:</div>${cvBox()}<button class="p" ${busy==="m"?"disabled":""} onclick="makeCV()">${busy==="m"?"Tailoring…":"Generate tailored CV"}</button></div>`;
+  if(m)h+=`<div class="card"><div class="row" style="justify-content:flex-start;gap:18px"><div><div class="mut">ATS match before</div><div class="big">${esc(m.before)}%</div></div><div style="font-size:28px">→</div><div><div class="mut">after</div><div class="big">${esc(m.after)}%</div></div></div><p>${(m.keywords||[]).map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</p>${m.missing&&m.missing.length?`<p class="mut">Still missing (add only if true): ${m.missing.map(esc).join(", ")}</p>`:""}</div><div class="card"><h3>Tailored CV</h3><pre>${esc(m.cv)}</pre><div class="row"><button class="p" onclick="navigator.clipboard&&navigator.clipboard.writeText(S.maker.cv).then(()=>toast('Copied'),()=>toast('Select and copy manually'))">Copy</button><button class="s" onclick="dl()">Download .txt</button></div><p class="mut">Fill any [bracketed] items with your real details. Never claim skills you don't have.</p></div>`;
+  $("#app").innerHTML=h;
+}
+function dl(){
+  const fn=`CV_${(S.co||"company").replace(/\W+/g,"_")}.txt`;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([S.maker.cv],{type:"text/plain"}));a.download=fn;a.click();URL.revokeObjectURL(a.href);
+}
+async function makeCV(){
+  S.co=$("#co").value.trim();S.role=$("#ro").value.trim();S.jd=$("#jd").value.trim();S.cv=$("#cvt").value.trim();
+  if(!S.co||!S.role||S.jd.length<60||S.cv.length<80)return toast("Fill company, role, JD and CV");
+  busy="m";render();const s=snap();
+  try{const r=await ai(`You are an ATS optimisation expert. Tailor the candidate's CV for ${S.role} at ${S.co}. Rules: use exact keywords/phrases from the JD (skills, tools, verbs, role title) where the candidate's experience truthfully supports them; add a targeted summary and a Skills section mirroring the JD; reorder bullets by relevance; plain ATS-safe formatting (no tables/columns), standard headings, quantified bullets. NEVER invent experience, employers, degrees or metrics: where a keyword matters but is unsupported, use a bracketed placeholder like [add your real X experience] or list it under "missing". Return ONLY JSON: {"before":number (estimated ATS keyword match % of the original CV),"after":number,"keywords":[up to 15 JD keywords now included],"missing":[keywords the candidate lacks],"cv":"full tailored CV as plain text"}.\n\nJD:\n${S.jd.slice(0,5000)}\n\nCV:\n${S.cv.slice(0,7000)}`);
+    S.maker=r;S.made=true;busy="";commit(s,"Tailored CV created");return}catch(e){}
+  busy="";render();
+}
+render();
+</script></body></html>
