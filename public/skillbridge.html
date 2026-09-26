@@ -293,20 +293,27 @@ function tests(){
   if(!has("test"))return paywall("test","Aptitude tests are locked","Unlock 5 hiring-difficulty tests (Quant + LRDI + Verbal) for ₹49.");
   if(quiz)return renderQuiz();
   if(prac)return renderPractice();
-  let h=`<div class="card"><h2>Phase 3 · Aptitude series</h2><p class="mut">5 sets, each ONE test with 3 sections — Quant, LRDI, Verbal — 10 challenging questions per section. Quant is generated instantly with verified answers; LRDI and Verbal are AI-written at hard, multi-step difficulty, with a built-in practice bank as backup, so every test always starts. Finish a set for +4.</p></div>`;
+  let h=`<div class="card"><h2>Phase 3 · Aptitude series</h2><p class="mut">5 sets, each ONE test with 3 sections — Quant, LRDI, Verbal — 10 challenging questions per section. Quant questions come from Arun Sharma's Quantitative Aptitude book (difficulty rises each set); LRDI and Verbal are AI-written at hard, multi-step difficulty, with a built-in practice bank as backup, so every test always starts. Finish a set for +4.</p></div>`;
   TESTS.forEach((t,i)=>{const b=S.tests[i];h+=`<div class="card ${b!=null?"done":""}"><div class="row"><div><h3>${t.n}</h3><div class="mut">${t.c} · ${t.d}</div></div>${b!=null?`<span class="chip">Best ${b}/30</span>`:""}</div><p class="mut">Real papers: ${t.c.split(",").map(c=>`<a href="https://www.google.com/search?q=${encodeURIComponent(c.trim()+" aptitude previous year questions")}" target="_blank" rel="noopener">${esc(c.trim())}</a>`).join(" · ")}</p><button class="p" ${busy?"disabled":""} onclick="startTest(${i})">${busy==="t"+i?"Building 30 questions… (up to 30s)":"Start"}</button></div>`});
   h+=`<div class="card"><h3>Practice with real PYQs</h3><p class="mut">Paste questions from a real previous-year paper you have (with or without the answer key). AI turns them into a mock test. This one doesn't change your readiness score.</p><textarea id="pyq" placeholder="Paste questions and options here…"></textarea><button class="p" ${busy?"disabled":""} onclick="importPYQ()">${busy==="p"?"Building mock…":"Build mock from my PYQs"}</button></div>`;
   h+=`<div class="card"><h3>🏋️ Unlimited practice zone</h3><p class="mut">Pick a domain, difficulty and a per-question timer, and generate a fresh practice set any time. Doesn't affect your readiness score.</p>
-  <div class="mut" style="margin-top:6px">Domain</div><input id="pd" oninput="pcfg.domain=this.value" placeholder="e.g. Data Structures, Marketing, Banking Awareness, Pure Quant" value="${esc(pcfg.domain)}">
+  <div class="mut" style="margin-top:6px">Quant topic (questions from Arun Sharma\'s book)</div><div class="diffrow" style="flex-wrap:wrap">${["",...QTOP].map(t=>`<button class="${pcfg.topic===t?"on":""}" onclick="pcfg.topic=\'${t}\';render()">${t||"Custom domain (AI)"}</button>`).join("")}</div>${pcfg.topic?"":`<div class="mut" style="margin-top:6px">Domain</div><input id="pd" oninput="pcfg.domain=this.value" placeholder="e.g. Data Structures, Marketing, Banking Awareness, Pure Quant" value="${esc(pcfg.domain)}">`}
   <div class="mut">Difficulty</div><div class="diffrow">${["Easy","Medium","Hard","Expert"].map(d=>`<button class="${pcfg.diff===d?"on":""}" onclick="pcfg.diff='${d}';render()">${d}</button>`).join("")}</div>
   <div class="mut">Per-question timer</div><div class="diffrow">${[["0","Off"],["30","30s"],["45","45s"],["60","60s"],["90","90s"]].map(([v,l])=>`<button class="${String(pcfg.timer)===v?"on":""}" onclick="pcfg.timer=${v};render()">${l}</button>`).join("")}</div>
   <div class="mut">Questions</div><div class="diffrow">${[10,15,20].map(n=>`<button class="${pcfg.n===n?"on":""}" onclick="pcfg.n=${n};render()">${n}</button>`).join("")}</div>
   <button class="p" style="margin-top:8px" ${busy==="pz"?"disabled":""} onclick="startPractice()">${busy==="pz"?"Generating…":"Start practice"}</button></div>`;
   $("#app").innerHTML=h;
 }
-let prac=null,pcfg={domain:"",diff:"Medium",timer:0,n:10},pInt=null;
+let prac=null,pcfg={domain:"",diff:"Medium",timer:0,n:10,topic:""},pInt=null;
+let QB=null;const QTOP=["Percentages","Profit & Loss","Interest","Ratio & Proportion","Time & Work","Speed, Time & Distance","Number Systems","Probability"];
+async function qbank(){if(!QB){try{QB=await (await fetch("/quant-bank.json")).json()}catch(e){QB=[]}}return QB}
+const LODN=["","Level I","Level II","Level III"];
+async function bankQs(n,diff,topic){const b=await qbank();const want={Easy:[1],Medium:[1,2],Hard:[2,3],Expert:[3,2]}[diff]||[1,2];
+  let pool=b.filter(x=>(!topic||x.t===topic));let p=pool.filter(x=>x.d===want[0]);if(p.length<n)p=p.concat(pool.filter(x=>want.slice(1).includes(x.d)));if(p.length<n)p=pool;
+  return sh(p).slice(0,n).map(x=>{const o=sh(x.o.map((v,k)=>[v,k]));return{q:x.q,o:o.map(y=>y[0]),a:o.findIndex(y=>y[1]===x.a),e:`From Arun Sharma's Quantitative Aptitude — ${x.t}, ${LODN[x.d]}.`}})}
 async function startPractice(){
-  const d=(pcfg.domain||"").trim();if(!d)return toast("Enter a domain first");
+  if(pcfg.topic){busy="pz";render();const qs=await bankQs(pcfg.n,pcfg.diff,pcfg.topic);if(qs.length){prac={qs,idx:0,ans:[],correct:0,timer:+pcfg.timer,left:+pcfg.timer,dom:"Quant · "+pcfg.topic,diff:pcfg.diff}}else toast("Couldn't load the question bank");busy="";render();scrollTo(0,0);if(prac)armTimer();return}
+  const d=(pcfg.domain||"").trim();if(!d)return toast("Pick a quant topic or enter a domain");
   pcfg.domain=d;busy="pz";render();
   try{let r,ok=false;
     for(let t=0;t<2&&!ok;t++){
@@ -348,13 +355,14 @@ function renderPractice(){
 
 async function startTest(i){
   busy="t"+i;render();const T=TESTS[i];
-  const qa=sh(QT).slice(0,10).map(f=>({...f(i),s:0}));
+  let qa=(await bankQs(10,["Easy","Medium","Medium","Hard","Expert"][i]||"Medium","")).map(q=>({...q,s:0}));
+  if(qa.length<10)qa=qa.concat(sh(QT).slice(0,10-qa.length).map(f=>({...f(i),s:0})));
   const [lr,vb]=await Promise.all([aiQs(1,T,10),aiQs(2,T,10)]);
   const src=a=>a.length>=10?"AI":a.length?"AI + bank":"bank";
   const L=lr.map(q=>({...q,s:1})),V=vb.map(q=>({...q,s:2})),lt=sh(LT),vt=sh(VB);
   let a=0;while(L.length<10)L.push({...lt[a++%lt.length](i),s:1});
   a=0;while(V.length<10)V.push({...vt[a++%vt.length],s:2});
-  quiz={i,nm:T.n,qs:[...qa,...L,...V],ans:{},sub:false,src:`Quant: generated · LRDI: ${src(lr)} · Verbal: ${src(vb)}`};
+  quiz={i,nm:T.n,qs:[...qa,...L,...V],ans:{},sub:false,src:`Quant: Arun Sharma book · LRDI: ${src(lr)} · Verbal: ${src(vb)}`};
   qsec=0;busy="";render();scrollTo(0,0);
 }
 async function importPYQ(){
