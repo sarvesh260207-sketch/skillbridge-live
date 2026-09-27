@@ -59,6 +59,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-roadmap-glow: var(--roadmap-glow);
 }
 
 :root {
@@ -95,6 +96,7 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --roadmap-glow: oklch(0.91 0.055 231);
 }
 
 .dark {
@@ -141,4 +143,31 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+@keyframes opening-pop {
+  0% { opacity: 0; transform: scale(0.92) translateY(10px); filter: blur(10px); }
+  35%, 72% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.02); filter: blur(5px); }
+}
+
+@keyframes quote-reveal {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes roadmap-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.opening-title { animation: opening-pop 3s ease-in-out both; letter-spacing: 0; }
+.opening-quote { animation: quote-reveal 0.9s ease-out both; }
+.roadmap-card { animation: roadmap-rise 0.6s ease-out both; border-radius: 0.5rem; }
+.roadmap-card:nth-child(2) { animation-delay: 140ms; }
+.roadmap-card:nth-child(3) { animation-delay: 280ms; }
+.roadmap-card:nth-child(4) { animation-delay: 420ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-title, .opening-quote, .roadmap-card { animation: none; }
 }
