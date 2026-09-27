@@ -45,3 +45,34 @@ function RoadmapCanvas() {
     <RoadmapScene />
   </Canvas></div>;
 }
+
+export function SkillBridgeOpening() {
+  const [stage, setStage] = useState<Stage>("blank");
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setStage("roadmap"); return; }
+    const timers = [
+      window.setTimeout(() => setStage("title"), 3500),
+      window.setTimeout(() => setStage("quote"), 6500),
+      window.setTimeout(() => setStage("roadmap"), 12500),
+    ];
+    return () => timers.forEach(window.clearTimeout);
+  }, []);
+
+  if (stage === "course") return <iframe src="/skillbridge.html" title="SkillBridge AI course" className="fixed inset-0 h-full w-full border-0 bg-background" />;
+
+  return <main className="fixed inset-0 overflow-hidden bg-background text-foreground">
+    <Button variant="ghost" size="sm" onClick={() => setStage("roadmap")} className={cn("absolute right-5 top-5 z-30 gap-2 text-muted-foreground transition-opacity duration-500", stage === "roadmap" ? "pointer-events-none opacity-0" : "opacity-100")}>
+      <SkipForward aria-hidden="true" /> Skip intro
+    </Button>
+
+    <section className={cn("absolute inset-0 z-20 grid place-items-center bg-background px-6 transition-opacity duration-700", stage === "title" ? "opacity-100" : "pointer-events-none opacity-0")} aria-hidden={stage !== "title"}>
+      <h1 className="opening-title text-center text-5xl font-semibold text-primary md:text-7xl">SkillBridge AI</h1>
+    </section>
+
+    <section className={cn("absolute inset-0 z-20 grid place-items-center bg-background px-7 transition-opacity duration-700", stage === "quote" ? "opacity-100" : "pointer-events-none opacity-0")} aria-hidden={stage !== "quote"}>
+      <figure className="opening-quote max-w-4xl text-center">
+        <blockquote className="font-serif text-2xl leading-relaxed text-foreground md:text-4xl md:leading-relaxed">“Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work. And the only way to do great work is to love what you do.”</blockquote>
+        <figcaption className="mt-7 text-sm font-medium text-muted-foreground">Steve Jobs</figcaption>
+      </figure>
+    </section>
