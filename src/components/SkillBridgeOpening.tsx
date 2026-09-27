@@ -48,21 +48,27 @@ function RoadmapCanvas() {
 
 export function SkillBridgeOpening() {
   const [stage, setStage] = useState<Stage>("blank");
+  const timersRef = useRef<number[]>([]);
+  const showRoadmap = () => {
+    timersRef.current.forEach(window.clearTimeout);
+    timersRef.current = [];
+    setStage("roadmap");
+  };
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) { setStage("roadmap"); return; }
-    const timers = [
+    timersRef.current = [
       window.setTimeout(() => setStage("title"), 3500),
       window.setTimeout(() => setStage("quote"), 6500),
       window.setTimeout(() => setStage("roadmap"), 12500),
     ];
-    return () => timers.forEach(window.clearTimeout);
+    return () => timersRef.current.forEach(window.clearTimeout);
   }, []);
 
   if (stage === "course") return <iframe src="/skillbridge.html" title="SkillBridge AI course" className="fixed inset-0 h-full w-full border-0 bg-background" />;
 
   return <main className="fixed inset-0 overflow-hidden bg-background text-foreground">
-    <Button variant="ghost" size="sm" onClick={() => setStage("roadmap")} className={cn("absolute right-5 top-5 z-30 gap-2 text-muted-foreground transition-opacity duration-500", stage === "roadmap" ? "pointer-events-none opacity-0" : "opacity-100")}>
+    <Button variant="ghost" size="sm" onClick={showRoadmap} className={cn("absolute right-5 top-5 z-30 gap-2 text-muted-foreground transition-opacity duration-500", stage === "roadmap" ? "pointer-events-none opacity-0" : "opacity-100")}>
       <SkipForward aria-hidden="true" /> Skip intro
     </Button>
 
