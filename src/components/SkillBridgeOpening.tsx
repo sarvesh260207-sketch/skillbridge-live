@@ -76,3 +76,27 @@ export function SkillBridgeOpening() {
         <figcaption className="mt-7 text-sm font-medium text-muted-foreground">Steve Jobs</figcaption>
       </figure>
     </section>
+
+    <section className={cn("absolute inset-0 transition-opacity duration-1000", stage === "roadmap" ? "opacity-100" : "pointer-events-none opacity-0")} aria-hidden={stage !== "roadmap"}>
+      <RoadmapCanvas />
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-5 py-5 md:px-10">
+        <div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">SB</span><span className="text-sm font-semibold">SkillBridge AI</span></div>
+        <span className="hidden text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground sm:block">Your path to career readiness</span>
+      </div>
+      <div className="absolute inset-0 z-10 flex flex-col justify-between px-5 pb-6 pt-20 md:px-10 md:pb-9">
+        <header className="mx-auto max-w-2xl text-center">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">From learning to hired</p>
+          <h2 className="text-3xl font-semibold leading-tight md:text-5xl">One clear path. Four decisive phases.</h2>
+        </header>
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+          {phases.map(({ number, title, detail, icon: Icon }, index) => <article key={number} className="roadmap-card border border-border/80 bg-background/90 p-3 shadow-sm backdrop-blur-md md:p-4" style={{ animationDelay: `${index * 140}ms` }}>
+            <div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Phase {number}</span><Icon className="h-4 w-4 text-primary" aria-hidden="true" /></div>
+            <h3 className="text-sm font-semibold leading-snug md:text-base">{title}</h3>
+            <p className="mt-1 hidden text-xs leading-relaxed text-muted-foreground sm:block">{detail}</p>
+          </article>)}
+        </div>
+        <div className="flex justify-center"><Button size="lg" onClick={() => setStage("course")} className="h-11 gap-2 px-6 shadow-lg shadow-primary/20">Enter SkillBridge <ArrowRight aria-hidden="true" /></Button></div>
+      </div>
+    </section>
+  </main>;
+}
