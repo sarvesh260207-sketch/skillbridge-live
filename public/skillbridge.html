@@ -128,7 +128,7 @@ ul{padding-left:18px;margin:6px 0}
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let S={plans:{ai:false,test:false,cv:false,full:false},done:{},les:{},certs:[],certDone:{},domain:"",tests:{},cv:"",cvRes:null,cvBest:0,made:false,maker:null,co:"",role:"",jd:"",name:"",streak:0,lastActive:"",topicStats:{}};
+let S={plans:{ai:false,test:false,cv:false,full:false},done:{},les:{},certs:[],certDone:{},domain:"",tests:{},cv:"",cvRes:null,cvBest:0,made:false,maker:null,co:"",role:"",jd:"",name:"",streak:0,lastActive:"",topicStats:{},calib:null};
 try{Object.assign(S,JSON.parse(localStorage.getItem("sb2")||"{}"))}catch(e){}
 const has=k=>S.plans.full||S.plans[k];
 const save=()=>{try{localStorage.setItem("sb2",JSON.stringify(S))}catch(e){}};
@@ -152,12 +152,13 @@ const ICONS={
  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>',
  trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 6h6v6"/>',
  brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+ users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
  check2:'<path d="M20 6 9 17l-5-5"/>'};
 const ic=(n,cls="ic")=>`<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||""}</svg>`;
 
 // ---------- readiness ----------
 const nD=()=>Object.keys(S.done).length,nC=()=>Object.keys(S.certDone).length,nT=()=>Object.keys(S.tests).length;
-const R=()=>Math.min(100,10+nD()*2+nC()*3+nT()*4+Math.round((S.cvBest||0)*.2)+(S.made?11:0));
+const R=()=>Math.min(100,10+nD()*2+nC()*3+nT()*4+Math.round((S.cvBest||0)*.2)+(S.made?11:0)+(S.calib&&S.calib.status==="ready"?6:0));
 const readyMsg=r=>r<25?"You're just getting started — build your foundation.":r<50?"You're making solid progress toward being interview-ready.":r<75?"Your profile is becoming interview-ready.":r<100?"Almost there — a few milestones left.":"You're fully career-ready. Keep your resume current.";
 function commit(prev,label){save();const n=R();if(n>prev)toast(`${label} — readiness now ${n}%`);render()}
 
@@ -210,6 +211,7 @@ function recommend(){
   if(has("test")){const i=TESTS.findIndex((t,k)=>S.tests[k]==null);if(i>=0)return{label:"Recommended next step",title:TESTS[i].n,sub:"30 questions · Quant, LRDI & Verbal",cta:"Start test",go:()=>{go('assessments');subA='tests'}}}
   if(has("cv")&&!S.cvBest)return{label:"Recommended next step",title:"Analyse your resume",sub:"Get an ATS readiness score in under a minute",cta:"Analyse now",go:()=>{go('resume');subR='score'}};
   if(has("cv")&&!S.made)return{label:"Recommended next step",title:"Tailor your resume for a role",sub:"Match a job description's keywords",cta:"Open resume builder",go:()=>{go('resume');subR='tailor'}};
+  if(calibEligible()&&!(S.calib&&S.calib.status==="ready"))return{label:"Bonus milestone unlocked",title:"Your Career, Reviewed by a Human.",sub:"Career Calibration — focused feedback from an experienced hiring perspective",cta:"Get My Career Calibrated",go:()=>calibration()};
   if(!has("ai")&&!has("test")&&!has("cv"))return{label:"Get started",title:"Unlock your first module",sub:"Choose a plan to begin building your career readiness",cta:"View plans",go:()=>go('profile')};
   return{label:"You're all caught up",title:"Every unlocked module is complete",sub:"Revisit any section to sharpen your score further",cta:"Explore",go:()=>go('learning')};
 }
@@ -230,6 +232,7 @@ function dashboard(){
     <div class="row"><div class="label">${esc(rec.label)}</div></div>
     <div class="row" style="margin-top:6px"><div><h3>${esc(rec.title)}</h3><div class="mut">${esc(rec.sub)}</div></div><button class="s" onclick="(${recToJs(rec)})()">${esc(rec.cta)}</button></div>
   </div>
+  ${calibCard()}
   <div class="label" style="margin:18px 2px 8px">Your career readiness</div>
   <div class="card grid2">
     ${cats.map(([t,p,tb])=>`<div><div class="row"><h3>${t}</h3><span class="num" style="font-size:13px">${p}%</span></div><div class="pbar" style="margin-top:6px"><i style="width:${p}%"></i></div></div>`).join("")}
@@ -521,6 +524,91 @@ async function makeCV(){
   try{const r=await ai(`You are an ATS optimisation expert. Tailor the candidate's resume for ${S.role} at ${S.co}. Rules: use exact keywords/phrases from the JD (skills, tools, verbs, role title) where the candidate's experience truthfully supports them; add a targeted summary and a Skills section mirroring the JD; reorder bullets by relevance; plain ATS-safe formatting (no tables/columns), standard headings, quantified bullets. NEVER invent experience, employers, degrees or metrics: where a keyword matters but is unsupported, use a bracketed placeholder like [add your real X experience] or list it under "missing". Return ONLY JSON: {"before":number (estimated ATS keyword match % of the original resume),"after":number,"keywords":[up to 15 JD keywords now included],"missing":[keywords the candidate lacks],"cv":"full tailored resume as plain text"}.\n\nJD:\n${S.jd.slice(0,5000)}\n\nResume:\n${S.cv.slice(0,7000)}`);
     S.maker=r;S.made=true;busy="";commit(s,"Career milestone — tailored resume created");return}catch(e){}
   busy="";render();
+}
+
+// ---------- Human Career Calibration (bonus milestone) ----------
+const calibEligible=()=>!!(S.cvRes&&S.cvBest);
+function calibCard(){
+  if(!calibEligible())return"";
+  if(S.calib&&S.calib.status==="ready")return `<div class="card" style="border-color:var(--ac)"><div class="row"><div><div class="label">Human expert review</div><h3 style="margin-top:4px">Career Calibration complete</h3><div class="mut" style="margin-top:2px">Revisit your personalised feedback and 30-day focus any time.</div></div><button class="s" onclick="calibration()">View</button></div></div>`;
+  if(S.calib&&S.calib.status==="submitted")return `<div class="card"><div class="row"><div><div class="label">Human expert review</div><h3 style="margin-top:4px">Your Career Calibration is being prepared</h3><div class="mut" style="margin-top:2px">Your Career Brief is with the reviewer.</div></div><button class="s" onclick="calibration()">Open</button></div></div>`;
+  return `<div class="card" style="border-color:var(--ac)"><div class="label" style="color:var(--ac)">Bonus milestone · Human expert review</div><div class="row" style="margin-top:6px"><div><h3>Your Career, Reviewed by a Human.</h3><div class="mut" style="margin-top:2px;max-width:420px">AI can analyse your profile. An experienced industry professional can tell you what actually matters.</div></div><button class="p" onclick="calibration()">Get My Career Calibrated</button></div></div>`;
+}
+function calibration(){
+  if(!calibEligible())return;
+  if(S.calib&&S.calib.status==="ready")return calibResult();
+  $("#app").innerHTML=calibIntro();
+}
+function calibIntro(){
+  const r=S.cvRes,submitted=S.calib&&S.calib.status==="submitted";
+  const strengths=(r.strengths||[]).slice(0,3),gaps=(r.gaps||[]).slice(0,3);
+  const resStatus=S.cvBest>=70?"Strong — needs only light polish":S.cvBest>=50?"Developing — impact statements need work":"Needs stronger project impact";
+  const brief=[["Target Role",[S.domain||"General entry-level roles"]],["Current Readiness",[R()+"%"]],["Top Strengths",strengths],["Priority Gaps",gaps],["Resume Status",[resStatus]]];
+  const steps=[["Complete your SkillBridge profile","Lessons, assessments and your resume — done."],["AI prepares your Career Brief","Your profile is summarised into a focused review document."],["Industry expert reviews your profile","A focused professional review from an experienced hiring perspective."],["Receive your Career Calibration","A concise written action plan and your 30-day focus."]];
+  const reviewed=[["Career Direction","Is your target role realistic and aligned with your current profile?"],["Skill Gaps","Which skills actually need attention instead of wasting time learning everything?"],["Resume &amp; Positioning","Does your profile communicate your strengths effectively to recruiters?"],["Next Steps","What should you focus on over the next 30–90 days?"]];
+  const clarity=["What you're doing right","What is holding your profile back","What you should stop spending time on","The skills and projects you should prioritise","Your next 3 career actions"];
+  const trust=[["Industry experience","Professional experience across real-world hiring and workplace environments."],["Fresher-focused","The review is designed specifically around early-career candidates and entry-level hiring expectations."],["Practical feedback","Focus on what can actually improve your profile — not generic career advice."]];
+  const avatar=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:30px;height:30px"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.5-3.8 4.3-5.6 7-5.6s5.5 1.8 7 5.6"/><path d="M3.5 12.5h.01M20.5 12.5h.01" stroke-width="2.5"/></svg>`;
+  const briefHtml=brief.map(b=>`<div style="margin:10px 0"><div class="label">${b[0]}</div>${b[1].map(x=>`<span class="chip" style="margin:3px 4px 0 0">${esc(x)}</span>`).join("")}</div>`).join("");
+  const stepHtml=steps.map((st,i)=>`<div style="display:flex;gap:12px;align-items:flex-start;padding:9px 0"><div class="iconbox" style="width:30px;height:30px;border-radius:9px;font-weight:700;font-size:13px">${i+1}</div><div><div style="font-weight:600;font-size:13.5px">${st[0]}</div><div class="mut" style="font-size:12.5px">${st[1]}</div></div></div>`).join(`<div class="mut" style="padding-left:9px;line-height:1">↓</div>`);
+  return `
+  <button class="gh" onclick="render()">← Back to Dashboard</button>
+  <div class="card" style="margin-top:10px;border-color:var(--ac)">
+    <div class="row" style="justify-content:flex-start;gap:14px">
+      <div class="iconbox" style="width:52px;height:52px;border-radius:14px">${avatar}</div>
+      <div>
+        <div class="label" style="color:var(--ac)">Human expert review</div>
+        <h2 style="margin-top:3px">Career Calibration</h2>
+        <span class="badge" style="margin-top:4px;display:inline-flex;align-items:center;gap:4px">${ic('check2','ic')} Human-reviewed</span>
+      </div>
+    </div>
+    <h1 style="font-size:22px;margin-top:16px">Your Career, Reviewed by a Human.</h1>
+    <p style="font-weight:600;margin-top:6px">AI can analyse your profile. An experienced industry professional can tell you what actually matters.</p>
+    <p class="mut" style="margin-top:6px">Once you've completed your SkillBridge career assessment, your profile can be reviewed by an experienced industry professional who works closely with fresher hiring and early-career talent. You'll receive focused, practical feedback on what to improve and what to prioritise next.</p>
+    <div style="margin-top:12px"><div class="row"><div class="label">Milestone progress</div><span class="num" style="font-size:12px">${R()}% career readiness</span></div><div class="pbar" style="margin-top:6px"><i style="width:${R()}%"></i></div></div>
+    <div class="row" style="justify-content:flex-start;gap:10px;margin-top:14px">
+      ${submitted?`<button class="p" disabled>Review in progress</button>`:`<button class="p" ${busy==="cal"?"disabled":""} onclick="submitCalib()">${busy==="cal"?"Submitting…":"Get My Career Calibrated →"}</button>`}
+      <button class="s" onclick="document.getElementById('whats-reviewed').scrollIntoView({behavior:'smooth'})">See What Gets Reviewed</button>
+    </div>
+  </div>
+  <div class="label" style="margin:18px 2px 8px" id="whats-reviewed">What gets reviewed</div>
+  <div class="grid2">${reviewed.map(x=>`<div class="card" style="margin:0"><h3>${x[0]}</h3><p class="mut" style="margin-top:4px">${x[1]}</p></div>`).join("")}</div>
+  <div class="label" style="margin:18px 2px 8px">You'll leave with clarity on</div>
+  <div class="card">${clarity.map(x=>`<div class="feat">${ic('check2')}<span>${esc(x)}</span></div>`).join("")}</div>
+  <div class="label" style="margin:18px 2px 8px">How it works</div>
+  <div class="card">${stepHtml}</div>
+  <div class="label" style="margin:18px 2px 8px">Your career brief</div>
+  <div class="card"><p class="mut" style="margin-top:0">This is what the reviewer sees — built from your SkillBridge profile.</p>${briefHtml}<button class="p" style="margin-top:10px" ${busy==="cal"?"disabled":""} onclick="submitCalib()">${busy==="cal"?"Submitting…":"Submit for Human Calibration →"}</button></div>
+  <div class="label" style="margin:18px 2px 8px">Reviewed from a hiring perspective</div>
+  <div class="card grid2">${trust.map(x=>`<div><h3>${x[0]}</h3><p class="mut" style="margin-top:4px">${x[1]}</p></div>`).join("")}</div>
+  <div class="card" style="text-align:center"><h3>AI handles scale. Human expertise handles judgment.</h3><p class="mut" style="margin-top:4px">AI does the heavy lifting across SkillBridge; a real industry perspective is introduced at the most important point in your journey.</p></div>`;
+}
+async function submitCalib(){
+  if(busy==="cal")return;busy="cal";S.calib={status:"submitted"};save();calibration();
+  try{
+    const r=S.cvRes;
+    const d=await ai(`You are an experienced industry professional with substantial experience in hiring freshers and early-career talent, reviewing from an HR/recruitment perspective. Review this candidate profile and give specific, practical, honest feedback — no generic career advice. Return ONLY JSON: {"well":[3 short strings: what the candidate is doing well],"attention":[3 short strings: what is holding the profile back],"recruiters":[2-3 short strings: what recruiters may notice, positive or negative],"improvements":[3 short strings: highest-impact improvements],"actions":[exactly 3 short imperative next career actions],"focus30":[exactly 3 specific 30-day focus items with concrete deliverables]}.\n\nTarget role: ${S.domain||"general entry-level roles"}\nResume score: ${S.cvBest}/100 (ATS ${r.ats||"?"}, impact ${r.impact||"?"}, skills ${r.skills||"?"}, formatting ${r.formatting||"?"}, experience ${r.experience||"?"})\nStrengths: ${(r.strengths||[]).join("; ")}\nGaps: ${(r.gaps||[]).join("; ")}\nTop insight: ${r.insight||""}\n\nResume:\n${(S.cv||"").slice(0,4000)}`);
+    S.calib={status:"ready",data:{well:(d.well||r.strengths||[]).slice(0,4),attention:(d.attention||r.gaps||[]).slice(0,4),recruiters:(d.recruiters||[]).slice(0,3),improvements:(d.improvements||(r.insight?[r.insight]:[])).slice(0,4),actions:(d.actions||[]).slice(0,3),focus30:(d.focus30||[]).slice(0,3)}};
+  }catch(e){
+    const r=S.cvRes;
+    S.calib={status:"ready",data:{well:(r.strengths||[]).slice(0,3),attention:(r.gaps||[]).slice(0,3),recruiters:[],improvements:r.insight?[r.insight]:[],actions:["Clarify your target role and align your resume to it","Add one measurable outcome to each key project","Prioritise your single biggest skill gap this month"],focus30:[(r.gaps||[])[0]?`Close your top skill gap: ${r.gaps[0]}`:"Complete one portfolio project in your target domain","Rewrite resume bullets around measurable outcomes","Apply to roles matching your current skill profile"]}};
+  }
+  busy="";save();toast("Your Career Calibration is ready — readiness now "+R()+"%");calibResult();
+}
+function calibResult(){
+  if(!S.calib||S.calib.status!=="ready")return calibration();
+  const d=S.calib.data||{};
+  const sec=(t,items)=>items&&items.length?`<div class="card"><h3>${t}</h3><ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";
+  $("#app").innerHTML=`
+  <button class="gh" onclick="render()">← Back to Dashboard</button>
+  <div class="card" style="margin-top:10px;border-color:var(--ac)"><div class="label" style="color:var(--ac)">Human expert review · Human-reviewed</div><h1 style="font-size:21px;margin-top:6px">Your Career Calibration is Ready</h1><p class="mut" style="margin-top:6px">A focused professional review of your profile, from an experienced hiring perspective.</p></div>
+  ${sec("What you're doing well",d.well)}
+  ${sec("What needs attention",d.attention)}
+  ${sec("What recruiters may notice",d.recruiters)}
+  ${sec("Your highest-impact improvements",d.improvements)}
+  ${sec("Your next 3 actions",d.actions)}
+  <div class="card" style="border-color:var(--ac)"><div class="label" style="color:var(--ac)">Your 30-Day Focus</div><ol style="margin:8px 0 0;padding-left:20px">${(d.focus30||[]).map(x=>`<li style="margin:6px 0">${esc(x)}</li>`).join("")}</ol></div>
+  <div class="card" style="text-align:center;padding:26px 18px"><h3 style="font-size:16px">You now have something AI alone can't give you: perspective.</h3><p class="mut" style="margin-top:6px">Use the feedback to refine your direction, strengthen your profile, and execute with confidence.</p></div>`;
 }
 
 // ---------- Profile / Plans ----------
