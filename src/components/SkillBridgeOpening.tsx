@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { ArrowRight, BookOpen, BrainCircuit, FileText, ScanSearch, SkipForward } from "lucide-react";
+import { ArrowRight, BookOpen, BrainCircuit, FileText, ScanSearch, SkipForward, Users } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ const phases = [
   { number: "02", title: "Resume building", detail: "Turn your experience into a focused, credible professional story.", icon: FileText },
   { number: "03", title: "Aptitude preparation", detail: "Practice quantitative, reasoning and verbal tests at progressive levels.", icon: BrainCircuit },
   { number: "04", title: "ATS CV maker", detail: "Create a tailored CV designed to pass screening systems and win interviews.", icon: ScanSearch },
+  { number: "05", title: "Bonus: Human Career Calibration", detail: "The surprise finale — an experienced industry professional reviews your profile and tells you what actually matters.", icon: Users },
 ];
 // Edit these two lines to change the quote shown in the intro.
 const QUOTE_TEXT = "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work. And the only way to do great work is to love what you do.";
@@ -42,16 +43,16 @@ function RoadmapScene({ active, instant, cards }: { active: boolean; instant: bo
   const { size } = useThree();
   const portrait = size.width < size.height * 0.95;
   const halfW = Math.tan(THREE.MathUtils.degToRad(43 / 2)) * 12 * (size.width / size.height);
-  const scale = portrait ? 1 : Math.min(1, (0.8 * halfW) / 7.4);
+  const scale = portrait ? 1 : Math.min(1, (0.8 * halfW) / 8.9);
   const tmp = useMemo(() => new THREE.Vector3(), []);
 
   const { nodePts, curve, fractions, tubeGeo, glowGeo } = useMemo(() => {
     const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-    const portraitNodes = [v(-1.8, 2.2, 0), v(-1.8, 0.55, 0.2), v(-1.8, -1.1, 0), v(-1.8, -2.75, 0.2)];
-    const landscapeNodes = [v(-7, -1.1, 0), v(-2.4, 1.05, -0.8), v(2.35, -0.7, 0.35), v(7, 1.1, -0.5)];
+    const portraitNodes = [v(-1.8, 2.7, 0), v(-1.8, 1.1, 0.2), v(-1.8, -0.5, 0), v(-1.8, -2.1, 0.2), v(-1.8, -3.7, 0)];
+    const landscapeNodes = [v(-8.4, -1.1, 0), v(-4.2, 1.3, -0.8), v(0, -1.2, 0.35), v(4.2, 1.3, -0.6), v(8.4, -1.0, 0)];
     const nodes = portrait ? portraitNodes : landscapeNodes;
     const path: THREE.Vector3[] = portrait
-      ? [v(-1.8, 2.2, 0), v(-1.15, 1.4, -0.3), v(-1.8, 0.55, 0.2), v(-2.45, -0.28, 0.1), v(-1.8, -1.1, 0), v(-1.15, -1.95, -0.3), v(-1.8, -2.75, 0.2)]
+      ? [v(-1.8, 2.7, 0), v(-1.15, 1.9, -0.3), v(-1.8, 1.1, 0.2), v(-2.45, 0.3, 0.1), v(-1.8, -0.5, 0), v(-1.15, -1.3, -0.3), v(-1.8, -2.1, 0.2), v(-2.45, -2.9, 0.1), v(-1.8, -3.7, 0)]
       : nodes;
     const c = new THREE.CatmullRomCurve3(path);
     const fr = nodes.map((p) => {
@@ -66,7 +67,7 @@ function RoadmapScene({ active, instant, cards }: { active: boolean; instant: bo
 
   // Card widths only change with viewport (not per frame) to avoid layout work at 60fps.
   useLayoutEffect(() => {
-    const width = portrait ? Math.min(340, size.width - ((0.5 - (0.5 * 1.8) / halfW) * size.width + 34) - 16) : Math.min(230, Math.max(140, size.width * 0.17));
+    const width = portrait ? Math.min(340, size.width - ((0.5 - (0.5 * 1.8) / halfW) * size.width + 34) - 16) : Math.min(206, Math.max(120, size.width * 0.15));
     cards.current.forEach((el) => { if (el) el.style.width = `${Math.max(120, width)}px`; });
   }, [portrait, size.width, size.height, halfW, cards]);
 
@@ -198,12 +199,12 @@ export function SkillBridgeOpening() {
         </div>
         <header className="absolute inset-x-0 top-20 z-10 mx-auto max-w-2xl px-5 text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">From learning to hired</p>
-          <h2 className="text-3xl font-semibold leading-tight md:text-5xl">One clear path. Four decisive phases.</h2>
+          <h2 className="text-3xl font-semibold leading-tight md:text-5xl">One clear path. Four phases. One surprise.</h2>
         </header>
         <div className="pointer-events-none absolute inset-0 z-10">
           {phases.map(({ number, title, detail, icon: Icon }, index) => (
             <article key={number} ref={(el) => { cardRefs.current[index] = el; }} className="roadmap-card absolute left-0 top-0 border border-border/80 bg-background/90 p-3 opacity-0 shadow-sm backdrop-blur-md will-change-transform md:p-4">
-              <div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Phase {number}</span><Icon className="h-4 w-4 text-primary" aria-hidden="true" /></div>
+              <div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">{number === "05" ? "Bonus phase 05" : `Phase ${number}`}</span><Icon className="h-4 w-4 text-primary" aria-hidden="true" /></div>
               <h3 className="text-sm font-semibold leading-snug md:text-base">{title}</h3>
               <p className="mt-1 hidden text-xs leading-relaxed text-muted-foreground sm:block">{detail}</p>
             </article>
