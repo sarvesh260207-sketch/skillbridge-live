@@ -612,6 +612,19 @@ function calibResult(){
 }
 
 // ---------- Profile / Plans ----------
+const PHASES=[
+  ["Discover",["AI Career Assessment","Career & Role Matching","Skill Gap Analysis","Personalized Career Roadmap","Career Readiness Score"]],
+  ["Build",["AI ATS Resume Maker","Resume & ATS Score","LinkedIn Profile Builder","Portfolio Builder","Job Description → Career Assets"]],
+  ["Human Calibration",["Industry Expert Review","Personalized Career Feedback","Recruiter Perspective","Top Career Gaps Identified","3 High-Impact Next Actions"]],
+  ["Get Job Ready",["AI Mock Interviews","Technical + HR Interview Prep","STAR Answer Builder","Interview Readiness Score","Recruiter Mode"]],
+  ["Execute & Get Hired",["90-Day Career Dashboard","Job Application Tracker","Job-Fit Analysis","Interview & Follow-up Tracker","\u201cYour Next Best Action\u201d"]]
+];
+function phaseCard(title,feats,i){
+  return `<div class="card" style="margin:0"><div class="label">Phase ${i+1}</div><h3 style="margin-top:4px">${title}</h3>${feats.map(f=>`<div class="feat">${ic('check2')}<span>${f}</span></div>`).join("")}</div>`;
+}
+function phaseCards(){
+  return `<div class="label" style="margin:18px 2px 8px">Your Career Roadmap</div>${PHASES.map((p,i)=>phaseCard(p[0],p[1],i)).join("")}`;
+}
 function planCard(key,title,price,desc,feats,best){
   const on=has(key);
   return `<div class="pricecard ${best?"best":""}">${best?'<div class="rec">Recommended</div>':""}<div class="row" style="justify-content:space-between;align-items:flex-start"><h3>${title}</h3><span class="num" style="font-size:19px">₹${price}</span></div><p class="mut" style="margin-top:6px">${desc}</p>${feats.map(f=>`<div class="feat">${ic('check2')}<span>${f}</span></div>`).join("")}<br>${on?`<button class="s" disabled>${ic('check2','ic')} Unlocked</button>`:`<button class="p" onclick="buy('${key}',${price},'${title.replace(/'/g,"")}')">${busy==="buy"+key?"Processing…":`Unlock for ₹${price}`}</button>`}</div>`;
@@ -629,6 +642,7 @@ function profile(){
     <div class="card" style="margin:0"><div class="label">Lessons</div><div class="num" style="font-size:20px;margin-top:4px">${nD()}/12</div></div>
     <div class="card" style="margin:0"><div class="label">Certificates</div><div class="num" style="font-size:20px;margin-top:4px">${nC()}/5</div></div>
   </div>
+  ${phaseCards()}
   <div class="label" style="margin:18px 2px 8px">Plans</div>
   <div class="card">${planCard("test","Assessments",49,"5 hiring-difficulty tests plus unlimited topic-wise practice.",["Quant + LRDI + Verbal, one test each","Timed, sequential exam experience","Unlimited custom &amp; topic practice"])}</div>
   <div class="card">${planCard("cv","Resume &amp; Application Prep",49,"Know where your resume stands, then tailor it per role.",["ATS readiness score with breakdown","Gap-filling course &amp; project suggestions","JD-matched resume tailoring"])}</div>
