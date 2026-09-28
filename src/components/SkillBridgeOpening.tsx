@@ -16,7 +16,7 @@ const phases = [
   { number: "04", title: "ATS CV maker", detail: "Create a tailored CV designed to pass screening systems and win interviews.", icon: ScanSearch },
 ];
 // Edit these two lines to change the quote shown in the intro.
-const QUOTE_TEXT = "The only way to do great work is to love what you do.";
+const QUOTE_TEXT = "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work. And the only way to do great work is to love what you do.";
 const QUOTE_AUTHOR = "Steve Jobs";
 const colors = { white: "#ffffff", blue: "#2186e8", pale: "#dff2ff", mist: "#eef8ff" };
 
@@ -180,7 +180,7 @@ export function SkillBridgeOpening() {
       </Button>
 
       <section className={cn("absolute inset-0 z-20 grid place-items-center bg-white px-6", fade, stage === "title" ? "opacity-100" : "pointer-events-none opacity-0")} style={{ transitionDuration: `${FADE}ms` }} aria-hidden={stage !== "title"}>
-        <h1 className={cn("text-center text-3xl uppercase tracking-[0.22em] transition-transform ease-out md:text-5xl", stage === "title" ? "scale-100" : "scale-95")} style={{ color: "#000", fontFamily: '"Manrope", "Inter", system-ui, sans-serif', fontWeight: 800, transitionDuration: `${FADE + 300}ms` }}>SkillBridge AI</h1>
+        <h1 className={cn("text-center text-2xl uppercase tracking-[0.18em] transition-transform ease-out md:text-4xl", stage === "title" ? "scale-100" : "scale-95")} style={{ color: "#000", fontFamily: '"Manrope", "Inter", system-ui, sans-serif', fontWeight: 800, transitionDuration: `${FADE + 300}ms` }}>SkillBridge AI</h1>
       </section>
 
       <section className={cn("absolute inset-0 z-20 grid place-items-center bg-white px-7", fade, stage === "quote" ? "opacity-100" : "pointer-events-none opacity-0")} style={{ transitionDuration: `${FADE}ms` }} aria-hidden={stage !== "quote"}>
