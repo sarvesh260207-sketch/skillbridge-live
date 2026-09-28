@@ -185,7 +185,7 @@ export function SkillBridgeOpening() {
 
       <section className={cn("absolute inset-0 z-20 grid place-items-center bg-white px-7", fade, stage === "quote" ? "opacity-100" : "pointer-events-none opacity-0")} style={{ transitionDuration: `${FADE}ms` }} aria-hidden={stage !== "quote"}>
         <figure className="max-w-3xl text-center">
-          <blockquote className="text-3xl leading-relaxed md:text-5xl md:leading-relaxed" style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>“{QUOTE_TEXT}”</blockquote>
+          <blockquote className={cn("leading-relaxed md:leading-relaxed", QUOTE_TEXT.length > 90 ? "text-2xl md:text-4xl" : "text-3xl md:text-5xl")} style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>“{QUOTE_TEXT}”</blockquote>
           <figcaption className="mt-7 text-base" style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>— {QUOTE_AUTHOR}</figcaption>
         </figure>
       </section>
