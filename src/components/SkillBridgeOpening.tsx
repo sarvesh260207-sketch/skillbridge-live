@@ -15,6 +15,9 @@ const phases = [
   { number: "03", title: "Aptitude preparation", detail: "Practice quantitative, reasoning and verbal tests at progressive levels.", icon: BrainCircuit },
   { number: "04", title: "ATS CV maker", detail: "Create a tailored CV designed to pass screening systems and win interviews.", icon: ScanSearch },
 ];
+// Edit these two lines to change the quote shown in the intro.
+const QUOTE_TEXT = "The only way to do great work is to love what you do.";
+const QUOTE_AUTHOR = "Steve Jobs";
 const colors = { white: "#ffffff", blue: "#2186e8", pale: "#dff2ff", mist: "#eef8ff" };
 
 // Timeline (ms): white hold -> title in (2s hold) -> out -> quote in (5s hold) -> out -> roadmap
@@ -177,13 +180,13 @@ export function SkillBridgeOpening() {
       </Button>
 
       <section className={cn("absolute inset-0 z-20 grid place-items-center bg-white px-6", fade, stage === "title" ? "opacity-100" : "pointer-events-none opacity-0")} style={{ transitionDuration: `${FADE}ms` }} aria-hidden={stage !== "title"}>
-        <h1 className={cn("text-center text-5xl font-semibold tracking-tight transition-transform ease-out md:text-7xl", stage === "title" ? "scale-100" : "scale-95")} style={{ color: colors.blue, transitionDuration: `${FADE + 300}ms` }}>SkillBridge AI</h1>
+        <h1 className={cn("text-center text-3xl uppercase tracking-[0.22em] transition-transform ease-out md:text-5xl", stage === "title" ? "scale-100" : "scale-95")} style={{ color: "#000", fontFamily: '"Manrope", "Inter", system-ui, sans-serif', fontWeight: 800, transitionDuration: `${FADE + 300}ms` }}>SkillBridge AI</h1>
       </section>
 
       <section className={cn("absolute inset-0 z-20 grid place-items-center bg-white px-7", fade, stage === "quote" ? "opacity-100" : "pointer-events-none opacity-0")} style={{ transitionDuration: `${FADE}ms` }} aria-hidden={stage !== "quote"}>
         <figure className="max-w-3xl text-center">
-          <blockquote className="text-3xl leading-relaxed md:text-5xl md:leading-relaxed" style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>“The only way to do great work is to love what you do.”</blockquote>
-          <figcaption className="mt-7 text-base" style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>— Steve Jobs</figcaption>
+          <blockquote className="text-3xl leading-relaxed md:text-5xl md:leading-relaxed" style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>“{QUOTE_TEXT}”</blockquote>
+          <figcaption className="mt-7 text-base" style={{ color: "#000", fontFamily: '"Times New Roman", Times, serif' }}>— {QUOTE_AUTHOR}</figcaption>
         </figure>
       </section>
 
