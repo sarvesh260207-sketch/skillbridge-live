@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { ArrowRight, BookOpen, BrainCircuit, FileText, ScanSearch, SkipForward, PhoneCall } from "lucide-react";
+import { ArrowRight, BookOpen, BrainCircuit, Check, FileText, ScanSearch, SkipForward, PhoneCall } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,41 @@ import { cn } from "@/lib/utils";
 type Stage = "blank" | "title" | "quote" | "roadmap" | "course";
 type CardRefs = MutableRefObject<(HTMLElement | null)[]>;
 
-const phases: { number: string; title: string; detail?: string; icon: typeof BookOpen }[] = [
-  { number: "01", title: "Skill building & projects", detail: "Build practical AI skills through guided lessons and portfolio-ready work.", icon: BookOpen },
-  { number: "02", title: "Resume building", detail: "Turn your experience into a focused, credible professional story.", icon: FileText },
-  { number: "03", title: "Aptitude preparation", detail: "Practice quantitative, reasoning and verbal tests at progressive levels.", icon: BrainCircuit },
-  { number: "04", title: "ATS CV maker", detail: "Create a tailored CV designed to pass screening systems and win interviews.", icon: ScanSearch },
-  { number: "05", title: "HR on call", icon: PhoneCall },
+const phases: { number: string; title: string; detail?: string; icon: typeof BookOpen; features?: string[] }[] = [
+  {
+    number: "01",
+    title: "Discover",
+    detail: "Build practical AI skills through guided lessons and portfolio-ready work.",
+    icon: BookOpen,
+    features: ["AI Career Assessment", "Career & Role Matching", "Skill Gap Analysis", "Personalized Career Roadmap", "Career Readiness Score"],
+  },
+  {
+    number: "02",
+    title: "Build",
+    detail: "Turn your experience into a focused, credible professional story.",
+    icon: FileText,
+    features: ["AI ATS Resume Maker", "Resume & ATS Score", "LinkedIn Profile Builder", "Portfolio Builder", "Job Description → Career Assets"],
+  },
+  {
+    number: "03",
+    title: "Human Calibration",
+    detail: "Practice quantitative, reasoning and verbal tests at progressive levels.",
+    icon: BrainCircuit,
+    features: ["Industry Expert Review", "Personalized Career Feedback", "Recruiter Perspective", "Top Career Gaps Identified", "3 High-Impact Next Actions"],
+  },
+  {
+    number: "04",
+    title: "Get Job Ready",
+    detail: "Create a tailored CV designed to pass screening systems and win interviews.",
+    icon: ScanSearch,
+    features: ["AI Mock Interviews", "Technical + HR Interview Prep", "STAR Answer Builder", "Interview Readiness Score", "Recruiter Mode"],
+  },
+  {
+    number: "05",
+    title: "Execute & Get Hired",
+    icon: PhoneCall,
+    features: ["90-Day Career Dashboard", "Job Application Tracker", "Job-Fit Analysis", "Interview & Follow-up Tracker", "\u201cYour Next Best Action\u201d"],
+  },
 ];
 // Edit these two lines to change the quote shown in the intro.
 const QUOTE_TEXT = "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work. And the only way to do great work is to love what you do.";
@@ -202,11 +231,21 @@ export function SkillBridgeOpening() {
           <h2 className="text-3xl font-semibold leading-tight md:text-5xl">One clear path. Four phases. One surprise.</h2>
         </header>
         <div className="pointer-events-none absolute inset-0 z-10">
-          {phases.map(({ number, title, detail, icon: Icon }, index) => (
+          {phases.map(({ number, title, detail, icon: Icon, features }, index) => (
             <article key={number} ref={(el) => { cardRefs.current[index] = el; }} className="roadmap-card absolute left-0 top-0 border border-border/80 bg-background/90 p-3 opacity-0 shadow-sm backdrop-blur-md will-change-transform md:p-4">
               <div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">{number === "05" ? "Surprise element" : `Phase ${number}`}</span><Icon className="h-4 w-4 text-primary" aria-hidden="true" /></div>
               <h3 className="text-sm font-semibold leading-snug md:text-base">{title}</h3>
               {detail && <p className="mt-1 hidden text-xs leading-relaxed text-muted-foreground sm:block">{detail}</p>}
+              {features && features.length > 0 && (
+                <ul className="mt-2 hidden space-y-1 border-t border-border/60 pt-2 sm:block">
+                  {features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-1.5 text-[11px] leading-snug text-foreground/80 md:text-xs">
+                      <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" aria-hidden="true" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </article>
           ))}
         </div>
