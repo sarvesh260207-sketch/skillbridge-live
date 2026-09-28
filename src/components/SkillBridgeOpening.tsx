@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { ArrowRight, BookOpen, BrainCircuit, FileText, ScanSearch, SkipForward, Users } from "lucide-react";
+import { ArrowRight, BookOpen, BrainCircuit, FileText, ScanSearch, SkipForward, PhoneCall } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 type Stage = "blank" | "title" | "quote" | "roadmap" | "course";
 type CardRefs = MutableRefObject<(HTMLElement | null)[]>;
 
-const phases = [
+const phases: { number: string; title: string; detail?: string; icon: typeof BookOpen }[] = [
   { number: "01", title: "Skill building & projects", detail: "Build practical AI skills through guided lessons and portfolio-ready work.", icon: BookOpen },
   { number: "02", title: "Resume building", detail: "Turn your experience into a focused, credible professional story.", icon: FileText },
   { number: "03", title: "Aptitude preparation", detail: "Practice quantitative, reasoning and verbal tests at progressive levels.", icon: BrainCircuit },
   { number: "04", title: "ATS CV maker", detail: "Create a tailored CV designed to pass screening systems and win interviews.", icon: ScanSearch },
-  { number: "05", title: "Bonus: Human Career Calibration", detail: "The surprise finale — an experienced industry professional reviews your profile and tells you what actually matters.", icon: Users },
+  { number: "05", title: "HR on call", icon: PhoneCall },
 ];
 // Edit these two lines to change the quote shown in the intro.
 const QUOTE_TEXT = "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work. And the only way to do great work is to love what you do.";
@@ -204,9 +204,9 @@ export function SkillBridgeOpening() {
         <div className="pointer-events-none absolute inset-0 z-10">
           {phases.map(({ number, title, detail, icon: Icon }, index) => (
             <article key={number} ref={(el) => { cardRefs.current[index] = el; }} className="roadmap-card absolute left-0 top-0 border border-border/80 bg-background/90 p-3 opacity-0 shadow-sm backdrop-blur-md will-change-transform md:p-4">
-              <div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">{number === "05" ? "Bonus phase 05" : `Phase ${number}`}</span><Icon className="h-4 w-4 text-primary" aria-hidden="true" /></div>
+              <div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">{number === "05" ? "Surprise element" : `Phase ${number}`}</span><Icon className="h-4 w-4 text-primary" aria-hidden="true" /></div>
               <h3 className="text-sm font-semibold leading-snug md:text-base">{title}</h3>
-              <p className="mt-1 hidden text-xs leading-relaxed text-muted-foreground sm:block">{detail}</p>
+              {detail && <p className="mt-1 hidden text-xs leading-relaxed text-muted-foreground sm:block">{detail}</p>}
             </article>
           ))}
         </div>
