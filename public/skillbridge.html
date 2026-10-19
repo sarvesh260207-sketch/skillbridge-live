@@ -488,21 +488,183 @@ function renderQuiz(){
 }
 
 // ---------- Resume ----------
-const cvBox=()=>`<textarea id="cvt" placeholder="Paste your resume text here, or upload a .txt / .pdf below">${esc(S.cv)}</textarea><input type="file" id="cvf" accept=".txt,.md,.pdf" onchange="readCV(this.files[0])">`;
+/*CV-ENGINE-START*/
+const CV_SKILLS=["python","java","javascript","typescript","sql","mysql","postgresql","mongodb","excel","power bi","tableau","looker","react","angular","vue","node.js","express","django","flask","spring boot","html","css","rest api","graphql","aws","azure","gcp","docker","kubernetes","terraform","git","github","linux","ci/cd","jenkins","machine learning","deep learning","nlp","computer vision","data analysis","data analytics","data visualization","data cleaning","statistics","pandas","numpy","scikit-learn","tensorflow","pytorch","spark","hadoop","etl","data warehouse","big data","a/b testing","prompt engineering","generative ai","llm","automation","zapier","n8n","power automate","apps script","vba","agile","scrum","jira","confluence","figma","ui/ux","wireframing","user research","seo","sem","google analytics","google ads","content marketing","email marketing","social media","copywriting","content writing","crm","salesforce","hubspot","lead generation","market research","business analysis","stakeholder management","project management","product management","roadmap","okr","kpi","financial modelling","financial modeling","budgeting","forecasting","accounting","tally","gst","audit","valuation","risk management","supply chain","logistics","customer support","communication","leadership","teamwork","problem solving","c++","c#","golang","rust","kotlin","swift","android","ios","flutter","cybersecurity","networking","selenium","automation testing","unit testing","devops","microservices","oop","data structures","algorithms"];
+const CV_STOP=new Set("a an the and or of to in for on with at by from as is are was were be been being this that these those it its we you your our their will can may should must have has had do does did not no yes if then than so such via per into over under about across within including include etc using use used ability able strong work working works team teams role roles responsibilities responsibility required requirements requirement preferred plus years year experience experiences skills skill knowledge good excellent understanding minimum candidate candidates looking join company who what which when where how all any more most other some new also well both each while out up down across job position opportunity opportunities environment business ensure support help developing develop development provide providing drive driving make making meet manage including related relevant based high level highly Great great like etc ideal day days month months".split(" "));
+const CV_ACTION=new Set("built developed designed created led managed analysed analyzed implemented automated improved increased reduced optimized optimised launched delivered deployed engineered established streamlined collaborated coordinated conducted authored organized organised trained mentored presented researched evaluated migrated integrated tested resolved generated drove owned initiated achieved won secured scaled architected wrote produced executed supported maintained monitored negotiated forecasted visualized visualised published spearheaded founded cut grew boosted saved shipped refactored debugged documented facilitated planned prepared processed reviewed audited completed contributed demonstrated applied leveraged".split(" "));
+const CV_WEAK=/\b(responsible for|worked on|helped (with|to)|duties included|tasked with|assisted (with|in)|involved in|participated in|worked as)\b/i;
+const CV_BUL=/^\s*[-•*·▪●◦–—►▸■]\s*/;
+const cvNorm=s=>" "+String(s||"").toLowerCase().replace(/[^a-z0-9+#./&\s-]/g," ").replace(/\s+/g," ")+" ";
+const cvEsc=s=>s.replace(/[.*+?^${}()|[\]\\\/]/g,"\\$&");
+function hasTerm(n,term){return new RegExp("(^|[^a-z0-9+#])"+cvEsc(String(term).toLowerCase())+"(s|es)?($|[^a-z0-9+#])").test(n)}
+
+function jdKeywords(jd){
+  const n=cvNorm(jd),out=[],used=new Set();
+  CV_SKILLS.forEach(k=>{if(hasTerm(n,k)){out.push(k);k.split(/[\s/.-]+/).forEach(w=>used.add(w))}});
+  const freq={};
+  n.trim().split(" ").map(w=>w.replace(/^[.\-/&]+|[.\-/&]+$/g,"")).forEach(w=>{
+    if(w.length<3||CV_STOP.has(w)||/^\d+$/.test(w)||used.has(w))return;freq[w]=(freq[w]||0)+1});
+  Object.entries(freq).sort((a,b)=>b[1]-a[1]).forEach(([w,c])=>{if(c>=2&&out.length<30)out.push(w)});
+  return out.slice(0,30);
+}
+function kwMatch(text,kws){
+  const n=cvNorm(text),matched=kws.filter(k=>hasTerm(n,k)),missing=kws.filter(k=>!matched.includes(k));
+  return{matched,missing,pct:kws.length?Math.round(100*matched.length/kws.length):0};
+}
+function cvFacts(text){
+  const lines=String(text).split("\n").map(l=>l.trim()).filter(Boolean);
+  const words=String(text).split(/\s+/).filter(Boolean).length;
+  const email=(text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/)||[])[0]||"";
+  const phone=(text.match(/\+?\d[\d\s().-]{8,16}\d/g)||[]).find(p=>{const d=p.replace(/\D/g,"");return d.length>=10&&d.length<=13&&!/^(19|20)\d{2}/.test(d)})||"";
+  const linkedin=(text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i)||[])[0]||"";
+  const github=(text.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+/i)||[])[0]||"";
+  const SEC={summary:/^(professional\s+)?(summary|profile|objective|about me|career objective)\b/i,education:/^(education|academic)/i,experience:/^((work|professional|relevant)\s+)?(experience|employment)\b|^internships?\b/i,projects:/^((academic|personal|key|selected)\s+)?projects?\b/i,skills:/^((technical|key|core)\s+)?(skills|competencies)\b|^tech(nical)? stack/i,certs:/^(certifications?|certificates|licen[sc]es|courses)\b/i,extra:/^(achievements?|awards?|honou?rs|extra-?curricular|activities|leadership|positions of responsibility)\b/i};
+  const sections={},secIdx=[];
+  lines.forEach((l,i)=>{if(l.length>45)return;const h=l.replace(/[:\-–—|_*#\s]+$/,"").trim();for(const k in SEC){if(SEC[k].test(h)&&!sections[k]){sections[k]=i+1;secIdx.push([i,k]);break}}});
+  secIdx.sort((a,b)=>a[0]-b[0]);
+  let stm=[];
+  secIdx.forEach(([i,k],j)=>{if(k!=="experience"&&k!=="projects")return;const end=secIdx[j+1]?secIdx[j+1][0]:lines.length;for(let x=i+1;x<end;x++){const s=lines[x].replace(CV_BUL,"").trim();if(s.length>=30)stm.push(s)}});
+  if(stm.length<3)stm=lines.filter(l=>l.length>=40).map(l=>l.replace(CV_BUL,""));
+  const noYear=s=>s.replace(/\b(19|20)\d{2}\b/g," ");
+  const metric=stm.filter(s=>/\d/.test(noYear(s))).length;
+  const verb=stm.filter(s=>{const w=(s.split(/\s+/)[0]||"").toLowerCase().replace(/[^a-z]/g,"");return CV_ACTION.has(w)||(w.length>4&&w.endsWith("ed"))}).length;
+  const weak=stm.filter(s=>CV_WEAK.test(s)).length;
+  const pron=stm.filter(s=>/\b(I|my|me)\b/.test(s)).length;
+  const bullets=lines.filter(l=>CV_BUL.test(l)).length;
+  const avg=stm.length?Math.round(stm.reduce((a,s)=>a+s.length,0)/stm.length):0;
+  const messy=lines.filter(l=>(l.match(/\|/g)||[]).length>=3||/\t{2,}/.test(l)).length;
+  const sk=CV_SKILLS.filter(k=>hasTerm(cvNorm(text),k));
+  return{lines,words,email,phone,linkedin,github,sections,stm:stm.length,metric,verb,weak,pron,bullets,avg,messy,skills:sk};
+}
+function cvAnalyse(text,jd){
+  const f=cvFacts(text),checks=[],add=(ok,label,detail)=>checks.push({ok:!!ok,label,detail});
+  const hasExp=!!(f.sections.experience||f.sections.projects);
+  add(f.email,"Email address",f.email||"Not found — ATS parsers and recruiters need it");
+  add(f.phone,"Phone number",f.phone||"Not found");
+  add(f.linkedin||f.github,"LinkedIn / GitHub link",f.linkedin||f.github||"Add your LinkedIn URL");
+  add(f.sections.education,"Education section",f.sections.education?"Found":"Missing a clearly titled \"Education\" heading");
+  add(hasExp,"Experience or Projects section",hasExp?"Found":"Missing a clearly titled \"Experience\" or \"Projects\" heading");
+  add(f.sections.skills,"Skills section",f.sections.skills?"Found":"Add a \"Skills\" section listing tools and technologies");
+  add(f.sections.summary,"Summary / objective",f.sections.summary?"Found":"A 2–3 line summary helps ATS and recruiters");
+  add(f.words>=250&&f.words<=900,"Length",`${f.words} words — ideal for a fresher/early-career resume is 250–800`);
+  add(!f.messy,"ATS-safe layout",f.messy?`${f.messy} line(s) look like tables/columns, which ATS parsers often scramble`:"No table-like layout detected");
+  const mr=f.stm?f.metric/f.stm:0,vr=f.stm?f.verb/f.stm:0;
+  add(mr>=.4,"Quantified impact",`${f.metric} of ${f.stm} statements contain a number (aim for 40%+)`);
+  add(vr>=.7,"Action-verb openings",`${f.verb} of ${f.stm} statements start with an action verb (aim for 70%+)`);
+  add(!f.weak,"No weak phrases",f.weak?`${f.weak} statement(s) use phrases like "responsible for" / "worked on"`:"None found");
+  add(!f.pron,"No first-person pronouns",f.pron?`${f.pron} statement(s) use I / my / me`:"None found");
+  add(f.bullets>=6,"Bullet-point structure",`${f.bullets} bullet lines found (aim for 6+)`);
+  const ats=(f.email?15:0)+(f.phone?10:0)+(f.sections.education?15:0)+(hasExp?15:0)+(f.sections.skills?15:0)+(f.sections.summary?5:0)+((f.linkedin||f.github)?10:0)+(f.words>=250&&f.words<=900?10:f.words>=150?5:0)+(f.messy?0:5);
+  const impact=Math.max(0,Math.min(100,Math.round(Math.min(1,mr/.5)*60+Math.min(1,vr/.8)*40)-Math.min(20,f.weak*5)));
+  const formatting=Math.min(100,(f.bullets>=6?30:Math.round(f.bullets/6*30))+(f.avg>=60&&f.avg<=200?25:10)+(f.pron?0:15)+(f.messy?0:15)+(f.words>=300&&f.words<=800?15:5));
+  const experience=Math.min(100,Math.round(Math.min(1,f.stm/10)*40+(hasExp?20:0)+vr*20+Math.min(1,mr/.5)*20));
+  let kw=null,skills;
+  if(jd&&jd.trim().length>40){const ks=jdKeywords(jd);kw=kwMatch(text,ks);skills=kw.pct}else skills=Math.min(100,f.skills.length*12);
+  const score=Math.round(ats*.30+impact*.25+skills*.20+formatting*.10+experience*.15);
+  return{score,ats,impact,skills,formatting,experience,checks,facts:f,kw};
+}
+function normCV(o,orig){
+  const A=v=>Array.isArray(v)?v:[],T=v=>v==null?"":String(v).trim(),f=cvFacts(orig);
+  const c=o.contact||{};
+  return{name:T(o.name),headline:T(o.headline),
+    contact:{email:f.email||T(c.email),phone:f.phone||T(c.phone),location:T(c.location),links:[f.linkedin,f.github].filter(Boolean).concat(A(c.links).map(T).filter(l=>l&&!/linkedin\.com|github\.com/i.test(l)))},
+    summary:T(o.summary),
+    skills:A(o.skills).map(g=>typeof g==="string"?{group:"",items:[g]}:{group:T(g.group),items:A(g.items).map(T).filter(Boolean)}).filter(g=>g.items.length),
+    experience:A(o.experience).map(e=>({title:T(e.title),org:T(e.org),location:T(e.location),dates:T(e.dates),bullets:A(e.bullets).map(T).filter(Boolean)})),
+    projects:A(o.projects).map(p=>({name:T(p.name),tech:T(p.tech),bullets:A(p.bullets).map(T).filter(Boolean)})),
+    education:A(o.education).map(e=>({degree:T(e.degree),school:T(e.school),dates:T(e.dates),detail:T(e.detail)})),
+    certifications:A(o.certifications).map(T).filter(Boolean),achievements:A(o.achievements).map(T).filter(Boolean),
+    unsupported:A(o.unsupported_keywords).map(T).filter(Boolean),changes:A(o.changes).map(T).filter(Boolean)};
+}
+function cvToText(o){
+  const L=[],sec=t=>{L.push("");L.push(t)};
+  L.push((o.name||"").toUpperCase());if(o.headline)L.push(o.headline);
+  const ct=[o.contact.email,o.contact.phone,o.contact.location].concat(o.contact.links).filter(Boolean).join(" | ");if(ct)L.push(ct);
+  if(o.summary){sec("SUMMARY");L.push(o.summary)}
+  if(o.skills.length){sec("SKILLS");o.skills.forEach(g=>L.push((g.group?g.group+": ":"")+g.items.join(", ")))}
+  if(o.experience.length){sec("EXPERIENCE");o.experience.forEach(e=>{L.push([e.title,e.org].filter(Boolean).join(", ")+(e.location?", "+e.location:"")+(e.dates?" | "+e.dates:""));e.bullets.forEach(b=>L.push("- "+b));L.push("")});L.pop()}
+  if(o.projects.length){sec("PROJECTS");o.projects.forEach(p=>{L.push(p.name+(p.tech?" ("+p.tech+")":""));p.bullets.forEach(b=>L.push("- "+b));L.push("")});L.pop()}
+  if(o.education.length){sec("EDUCATION");o.education.forEach(e=>{L.push([e.degree,e.school].filter(Boolean).join(", ")+(e.dates?" | "+e.dates:""));if(e.detail)L.push(e.detail)})}
+  if(o.certifications.length){sec("CERTIFICATIONS");o.certifications.forEach(c=>L.push("- "+c))}
+  if(o.achievements.length){sec("ACHIEVEMENTS");o.achievements.forEach(c=>L.push("- "+c))}
+  return L.join("\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function cvBodyHTML(o){
+  const H=t=>`<div style="font:700 10.5pt Arial,Helvetica,sans-serif;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid #222;margin:14px 0 5px;padding-bottom:2px;color:#111">${t}</div>`;
+  const UL=a=>`<ul style="margin:3px 0 6px 18px;padding:0">${a.map(b=>`<li style="margin:2px 0">${esc(b)}</li>`).join("")}</ul>`;
+  const row=(l,r)=>`<div style="display:flex;justify-content:space-between;gap:12px;font-weight:700"><span>${l}</span><span style="font-weight:400;white-space:nowrap">${r||""}</span></div>`;
+  const ct=[o.contact.email,o.contact.phone,o.contact.location].concat(o.contact.links).filter(Boolean).map(esc).join("&nbsp;&nbsp;|&nbsp;&nbsp;");
+  let h=`<div style="font:10.5pt/1.4 Arial,Helvetica,sans-serif;color:#111"><div style="text-align:center"><div style="font:700 17pt Arial,sans-serif">${esc(o.name)}</div>${o.headline?`<div>${esc(o.headline)}</div>`:""}<div style="font-size:9.5pt">${ct}</div></div>`;
+  if(o.summary)h+=H("Summary")+`<div>${esc(o.summary)}</div>`;
+  if(o.skills.length)h+=H("Skills")+o.skills.map(g=>`<div style="margin:2px 0">${g.group?`<b>${esc(g.group)}:</b> `:""}${g.items.map(esc).join(", ")}</div>`).join("");
+  if(o.experience.length)h+=H("Experience")+o.experience.map(e=>row(esc([e.title,e.org].filter(Boolean).join(", ")+(e.location?", "+e.location:"")),esc(e.dates))+UL(e.bullets)).join("");
+  if(o.projects.length)h+=H("Projects")+o.projects.map(p=>row(esc(p.name)+(p.tech?` <span style="font-weight:400">(${esc(p.tech)})</span>`:""),"")+UL(p.bullets)).join("");
+  if(o.education.length)h+=H("Education")+o.education.map(e=>row(esc([e.degree,e.school].filter(Boolean).join(", ")),esc(e.dates))+(e.detail?`<div>${esc(e.detail)}</div>`:"")).join("");
+  if(o.certifications.length)h+=H("Certifications")+UL(o.certifications);
+  if(o.achievements.length)h+=H("Achievements")+UL(o.achievements);
+  return h+"</div>";
+}
+function verifyCV(o,orig,text){
+  const flags=[],on=cvNorm(orig),nn=s=>cvNorm(s).trim();
+  o.experience.forEach(e=>{if(e.org&&!on.includes(nn(e.org)))flags.push(`Employer "${e.org}" does not appear in your original resume`);if(e.title&&!on.includes(nn(e.title)))flags.push(`Job title "${e.title}" was reworded — keep your official title if it differs`)});
+  o.education.forEach(e=>{if(e.school&&!on.includes(nn(e.school)))flags.push(`Institution "${e.school}" does not appear in your original resume`)});
+  const body=[o.summary].concat(o.experience.flatMap(e=>e.bullets),o.projects.flatMap(p=>p.bullets),o.achievements,o.certifications).join(" \n ").replace(/\[[^\]]*\]/g," ");
+  const nums=(s)=>(s.replace(/\b(19|20)\d{2}\b/g," ").match(/\d[\d,]*(?:\.\d+)?/g)||[]).map(x=>x.replace(/,/g,""));
+  const have=new Set(nums(orig)),seen=new Set();
+  nums(body).forEach(x=>{if(!have.has(x)&&!seen.has(x)){seen.add(x);flags.push(`The number "${x}" is not in your original resume — confirm it is true or replace it with real data`)}});
+  const ph=(text.match(/\[[^\]]+\]/g)||[]).length;
+  if(ph)flags.push(`${ph} placeholder(s) in [brackets] need your real details before sending`);
+  return flags;
+}
+/*CV-ENGINE-END*/
+
+// ---------- CV maker: upload, analyse, generate ----------
+const cvBox=()=>`<textarea id="cvt" placeholder="Paste your resume text here, or upload a .pdf / .docx / .txt below">${esc(S.cv)}</textarea><input type="file" id="cvf" accept=".txt,.md,.pdf,.docx" onchange="readCV(this.files[0])"><p class="mut" style="font-size:12px;margin-top:4px">${S.cv?`${S.cv.split(/\s+/).filter(Boolean).length} words loaded`:"Your resume text is sent to the AI service only to generate feedback and rewrites."}</p>`;
+const loadScript=u=>new Promise((ok,no)=>{const q=[].concat(u),n=()=>{const x=q.shift();if(!x)return no();const s=document.createElement("script");s.src=x;s.onload=ok;s.onerror=()=>{s.remove();n()};document.head.appendChild(s)};n()});
+function keepInputs(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value.trim():null};
+  const t=g("cvt");if(t!==null)S.cv=t;const d=g("cvd");if(d!==null)S.domain=d;
+  const c=g("co");if(c!==null)S.co=c;const r=g("ro");if(r!==null)S.role=r;const j=g("jd");if(j!==null)S.jd=j;
+}
 async function readCV(f){
-  if(!f)return;
-  try{if(/\.pdf$/i.test(f.name)){
-      if(!window.pdfjsLib)await new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  if(!f)return;keepInputs();
+  try{
+    let t="";
+    if(/\.pdf$/i.test(f.name)){
+      if(!window.pdfjsLib)await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
       pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let t="";
-      for(let p=1;p<=pdf.numPages;p++){const c=await(await pdf.getPage(p)).getTextContent();t+=c.items.map(x=>x.str).join(" ")+"\n"}S.cv=t.trim()
-    }else S.cv=(await f.text()).trim();
-    if(!S.cv)throw 0;toast("Resume loaded")}catch(e){toast("Couldn't read that file — paste the text instead")}
+      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+      for(let p=1;p<=pdf.numPages;p++){
+        const c=await(await pdf.getPage(p)).getTextContent();let y=null,line="";
+        for(const it of c.items){
+          const yy=it.transform?it.transform[5]:null;
+          if(y!==null&&yy!==null&&Math.abs(yy-y)>3){t+=line.trim()+"\n";line=""}
+          line+=(line&&!/\s$/.test(line)&&!/^\s/.test(it.str)?" ":"")+it.str;
+          if(yy!==null)y=yy;
+        }
+        t+=line.trim()+"\n";
+      }
+    }else if(/\.docx$/i.test(f.name)){
+      if(!window.mammoth)await loadScript(["https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js","https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"]);
+      t=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+    }else if(/\.doc$/i.test(f.name)){toast("Old .doc files aren't supported — save as .docx or PDF");return}
+    else t=await f.text();
+    t=t.replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+    if(t.length<40)throw 0;
+    S.cv=t;toast("Resume loaded");
+  }catch(e){toast("Couldn't read that file — paste the text instead")}
   render();
 }
+async function aiJSON(prompt,ok,tries){
+  tries=tries||2;let last;
+  for(let i=0;i<tries;i++){
+    try{const r=await ai(prompt,i<tries-1);if(r&&!r.text&&(!ok||ok(r)))return r;last=new Error("unusable AI response")}catch(e){last=e}
+  }
+  throw last;
+}
 function resume(){
-  $("#app").innerHTML=`<h1>Resume</h1><p class="mut" style="margin:6px 0 16px">Score your resume, then tailor it to a specific role.</p>
-  <div class="pillrow"><button class="pill ${subR==='score'?'on':''}" onclick="subR='score';render()">Score</button><button class="pill ${subR==='tailor'?'on':''}" onclick="subR='tailor';render()">Tailor for a role</button></div>
+  $("#app").innerHTML=`<h1>Resume</h1><p class="mut" style="margin:6px 0 16px">Analyse your resume with measured checks, generate an improved version, or tailor it to a specific role.</p>
+  <div class="pillrow"><button class="pill ${subR==='score'?'on':''}" onclick="keepInputs();subR='score';render()">Analyse &amp; improve</button><button class="pill ${subR==='tailor'?'on':''}" onclick="keepInputs();subR='tailor';render()">Tailor for a role</button></div>
   <div id="rsub"></div>`;
   subR==='score'?resumeScore():resumeTailor();
 }
@@ -512,39 +674,106 @@ function resumeScore(){
   let h=`<div class="card"><h3>Upload or paste your resume</h3>${cvBox()}<input id="cvd" placeholder="Target domain / role (e.g. Data Analyst)" value="${esc(S.domain)}"><button class="p" ${busy==="v"?"disabled":""} onclick="scoreCV()">${busy==="v"?"Analysing…":"Analyse resume"}</button></div>`;
   if(r){const bars=[["ATS Compatibility",r.ats],["Impact Statements",r.impact],["Skills Coverage",r.skills],["Formatting",r.formatting],["Experience Quality",r.experience]].filter(x=>x[1]!=null);
     h+=`<div class="card"><div class="row"><div><div class="label">Resume Score</div><div class="num" style="font-size:32px;margin-top:4px">${esc(r.score)}<span style="font-size:15px;color:var(--mut);font-weight:600">/100</span></div></div><div class="ring" style="--p:${r.score}"><b class="num" style="font-size:15px">${r.score}%</b></div></div><p class="mut" style="margin-top:10px">${esc(r.summary)}</p></div>`;
-    if(bars.length)h+=`<div class="card">${bars.map(([l,v])=>`<div style="margin:10px 0"><div class="row"><h3>${l}</h3><span class="num" style="font-size:13px">${v}%</span></div><div class="pbar" style="margin-top:5px"><i style="width:${v}%"></i></div></div>`).join("")}</div>`;
-    if(r.insight)h+=`<div class="card"><h3>Improve your resume</h3><p class="mut" style="margin-top:6px">${esc(r.insight)}</p><button class="s" style="margin-top:8px" onclick="go('resume');subR='tailor';render()">Tailor for a role</button></div>`;
+    if(bars.length)h+=`<div class="card">${bars.map(([l,v])=>`<div style="margin:10px 0"><div class="row"><h3>${l}</h3><span class="num" style="font-size:13px">${v}%</span></div><div class="pbar" style="margin-top:5px"><i style="width:${v}%"></i></div></div>`).join("")}<p class="mut" style="font-size:12px;margin-top:8px">Scores are calculated from your resume text with fixed rules, so the same resume always scores the same.</p></div>`;
+    if(r.checks&&r.checks.length)h+=`<div class="card"><h3>Measured checks</h3>${r.checks.map(c=>`<div style="display:flex;gap:8px;margin:7px 0;font-size:13.5px"><b style="color:${c.ok?"var(--ok)":"#d64545"};width:14px">${c.ok?"✓":"✕"}</b><span><b>${esc(c.label)}</b> <span class="mut">— ${esc(c.detail)}</span></span></div>`).join("")}</div>`;
+    if(r.insight)h+=`<div class="card"><h3>Biggest improvement</h3><p class="mut" style="margin-top:6px">${esc(r.insight)}</p></div>`;
+    h+=`<div class="card"><h3>Generate an improved resume</h3><p class="mut" style="margin-top:4px">Rewrites your resume for ${esc(S.domain||"your target role")} using only your real experience: stronger action-verb bullets, ATS-safe layout, and a fact-check pass that flags anything not in your original.</p><button class="p" style="margin-top:8px" ${busy==="i"?"disabled":""} onclick="improveCV()">${busy==="i"?"Writing…":"Generate improved resume"}</button></div>`;
+    if(S.maker&&S.maker.mode==="improve")h+=cvOutput(S.maker);
     const L=(t,a,f)=>a&&a.length?`<div class="card"><h3>${t}</h3><ul>${a.map(f).join("")}</ul></div>`:"";
     h+=L("Strengths",r.strengths,x=>`<li>${esc(x)}</li>`)+L("Gaps to address",r.gaps,x=>`<li>${esc(x)}</li>`)+L("Recommended courses",r.courses,x=>`<li><b>${esc(x.title)}</b> — ${esc(x.provider)}</li>`)+L("Recommended projects",r.projects,x=>`<li><b>${esc(x.title)}</b>: ${esc(x.desc)}</li>`)+L("Stronger bullet rewrites",r.bullets,x=>`<li>${esc(x)}</li>`);
   }
   $("#app").innerHTML+=h;
 }
 async function scoreCV(){
-  S.cv=$("#cvt").value.trim();S.domain=$("#cvd").value.trim()||S.domain;
-  if(S.cv.length<80)return toast("Paste or upload your resume first");
+  keepInputs();
+  if(S.cv.length<120)return toast("Paste or upload your full resume first");
   busy="v";render();const s=R();
-  try{const r=await ai(`You are a strict recruiter and ATS expert. Score this resume's readiness (0-100) for the target domain "${S.domain||"general entry-level roles"}". Be honest; most student resumes score 35-70. Also score, each 0-100: ats (ATS/keyword compatibility), impact (quantified impact statements), skills (skills coverage for the domain), formatting (clarity/structure), experience (depth/relevance of experience). Return ONLY JSON: {"score":number,"ats":number,"impact":number,"skills":number,"formatting":number,"experience":number,"summary":"2 sentences","insight":"one practical sentence on the single highest-impact improvement","strengths":[3 strings],"gaps":[4 strings],"courses":[{"title","provider"} x4 real courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 rewritten weak bullets from the resume with metric placeholders like [X%]]}.\n\nResume:\n${S.cv.slice(0,7000)}`);
-    S.cvRes=r;S.cvBest=Math.max(S.cvBest||0,Math.round(+r.score||0));busy="";commit(s,"Career milestone — resume analysed");return}catch(e){}
+  const A=cvAnalyse(S.cv,"");
+  const failed=A.checks.filter(c=>!c.ok);
+  let q={};
+  try{
+    q=await aiJSON(`You are a strict recruiter and ATS expert reviewing a resume for the target domain "${S.domain||"general entry-level roles"}". The following facts were MEASURED from the resume by software and are accurate; do not contradict them: ${A.checks.map(c=>`${c.ok?"PASS":"FAIL"} ${c.label} (${c.detail})`).join("; ")}. Detected skills: ${A.facts.skills.join(", ")||"none"}. Write feedback that is specific to this resume's actual content. Return ONLY JSON: {"summary":"2 sentences","insight":"one practical sentence on the single highest-impact improvement","strengths":[3 strings referencing real content],"gaps":[4 strings],"courses":[{"title","provider"} x4 real, well-known courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 weak bullets taken verbatim from the resume, each rewritten with a metric placeholder like [X%] — never invent real numbers]}.\n\nResume:\n${S.cv.slice(0,7000)}`,o=>Array.isArray(o.gaps)&&Array.isArray(o.strengths));
+  }catch(e){toast("AI feedback unavailable — showing measured results only")}
+  const worst=failed[0];
+  const r=Object.assign({},q,{score:A.score,ats:A.ats,impact:A.impact,skills:A.skills,formatting:A.formatting,experience:A.experience,checks:A.checks,
+    summary:q.summary||`Your resume scores ${A.score}/100 on measured checks, with ${failed.length} of ${A.checks.length} checks needing attention.`,
+    insight:q.insight||(worst?`${worst.label}: ${worst.detail}`:"Your fundamentals are solid — tailor the resume to each job description.")});
+  S.cvRes=r;S.cvBest=Math.max(S.cvBest||0,Math.round(+r.score||0));busy="";commit(s,"Career milestone — resume analysed");
+}
+
+// ---------- generation (shared by Improve and Tailor) ----------
+async function genCV({role,co,jd,mode}){
+  const orig=S.cv,kws=jd?jdKeywords(jd):[];
+  const target=jd?`the ${role} role${co?" at "+co:""} and the job description below`:`${role||"general entry-level roles"}`;
+  const prompt=`You are an expert resume writer and ATS specialist. Rewrite the candidate's resume for ${target}.
+STRICT RULES:
+1. Use ONLY facts present in the original resume. Never invent employers, job titles, dates, degrees, institutions, tools, certifications or numbers.
+2. Keep every employer, institution, degree, date and project name exactly as written in the original.
+3. Write each bullet as: strong action verb + what you did + how/with which tool + result. Keep real numbers from the original. If a result is plausible but no number exists, add a placeholder such as [X%] or [add real number]. Never make up a figure.
+4. ${jd?`Use these exact JD keywords wherever the candidate's real experience truthfully supports them: ${kws.join(", ")}. A keyword the candidate cannot truthfully claim goes into "unsupported_keywords", NOT into the resume.`:"Order content by relevance to the target role."}
+5. Plain ATS-safe content: standard section names, reverse-chronological, max 5 bullets per role and 3 per project, no first-person pronouns, no tables, icons or columns.
+6. Remove filler such as "responsible for" and "worked on". Write a 2-3 line summary grounded in the real experience.
+Return ONLY JSON: {"name":"","headline":"","contact":{"email":"","phone":"","location":"","links":[]},"summary":"","skills":[{"group":"","items":[]}],"experience":[{"title":"","org":"","location":"","dates":"","bullets":[]}],"projects":[{"name":"","tech":"","bullets":[]}],"education":[{"degree":"","school":"","dates":"","detail":""}],"certifications":[],"achievements":[],"unsupported_keywords":[],"changes":[up to 6 short strings naming the most important edits]}
+${jd?`\nJOB DESCRIPTION:\n${jd.slice(0,5000)}\n`:""}\nORIGINAL RESUME:\n${orig.slice(0,8000)}`;
+  const raw=await aiJSON(prompt,x=>x&&typeof x==="object"&&(Array.isArray(x.experience)||Array.isArray(x.projects)));
+  const o=normCV(raw,orig),text=cvToText(o),flags=verifyCV(o,orig,text);
+  const added=jd?kwMatch(text,kws).matched.filter(k=>!hasTerm(cvNorm(orig),k)):[];
+  if(added.length)flags.unshift(`Keywords added that were not in your original resume: ${added.join(", ")} — keep them only if they are true for you`);
+  let before,after,metric,keywords=null,missing=null;
+  if(jd){const b=kwMatch(orig,kws),a=kwMatch(text,kws);before=b.pct;after=a.pct;metric="ATS keyword match";keywords=a.matched;missing=a.missing}
+  else{before=cvAnalyse(orig,"").score;after=cvAnalyse(text,"").score;metric="Resume score"}
+  return{mode,role,co,metric,before,after,keywords,missing,cv:text,data:o,flags,changes:o.changes,unsupported:o.unsupported};
+}
+async function improveCV(){
+  keepInputs();
+  if(S.cv.length<120)return toast("Paste or upload your full resume first");
+  if(!S.domain)return toast("Enter a target domain / role first");
+  busy="i";render();const s=R();
+  try{S.maker=await genCV({role:S.domain,mode:"improve"});busy="";commit(s,"Career milestone — resume improved");return}
+  catch(e){toast("Couldn't generate the resume — please try again")}
   busy="";render();
 }
 function resumeTailor(){
   if(!has("cv"))return paywall("cv","Resume tailoring is locked","Unlock the JD-matched resume tailoring tool alongside scoring for ₹49.");
   const m=S.maker;
-  let h=`<div class="card"><h3>Tailor for a company &amp; role</h3><p class="mut" style="margin-top:4px">Paste the job description. Keywords are woven in only where your real experience supports them.</p><input id="co" placeholder="Company" value="${esc(S.co)}"><input id="ro" placeholder="Role" value="${esc(S.role)}"><textarea id="jd" placeholder="Paste the full job description">${esc(S.jd)}</textarea><div class="label" style="margin-top:6px">Your resume</div>${cvBox()}<button class="p" style="margin-top:8px" ${busy==="m"?"disabled":""} onclick="makeCV()">${busy==="m"?"Tailoring…":"Generate tailored resume"}</button></div>`;
-  if(m)h+=`<div class="card"><div class="row" style="justify-content:flex-start;gap:22px"><div><div class="label">ATS match before</div><div class="num" style="font-size:24px">${esc(m.before)}%</div></div><div style="color:var(--mut2)">${ic('arrow','ic')}</div><div><div class="label">after</div><div class="num" style="font-size:24px;color:var(--ac)">${esc(m.after)}%</div></div></div><p style="margin-top:10px">${(m.keywords||[]).map(k=>`<span class="chip" style="margin:2px">${esc(k)}</span>`).join("")}</p>${m.missing&&m.missing.length?`<p class="mut" style="margin-top:8px">Still missing (add only if true): ${m.missing.map(esc).join(", ")}</p>`:""}</div><div class="card"><h3>Tailored resume</h3><pre style="margin-top:8px">${esc(m.cv)}</pre><div class="row" style="margin-top:8px;justify-content:flex-start;gap:8px"><button class="p" onclick="navigator.clipboard&&navigator.clipboard.writeText(S.maker.cv).then(()=>toast('Copied'),()=>toast('Select and copy manually'))">Copy</button><button class="s" onclick="dl()">Download .txt</button></div><p class="mut" style="margin-top:8px">Items in [brackets] need your real details.</p></div>`;
+  let h=`<div class="card"><h3>Tailor for a company &amp; role</h3><p class="mut" style="margin-top:4px">Paste the job description. Keywords are woven in only where your real experience supports them, and anything new is flagged for you to confirm.</p><input id="co" placeholder="Company" value="${esc(S.co)}"><input id="ro" placeholder="Role" value="${esc(S.role)}"><textarea id="jd" placeholder="Paste the full job description">${esc(S.jd)}</textarea><div class="label" style="margin-top:6px">Your resume</div>${cvBox()}<button class="p" style="margin-top:8px" ${busy==="m"?"disabled":""} onclick="makeCV()">${busy==="m"?"Tailoring…":"Generate tailored resume"}</button></div>`;
+  if(m&&m.mode!=="improve")h+=cvOutput(m);
   $("#app").innerHTML+=h;
 }
-function dl(){
-  const fn=`Resume_${(S.co||"company").replace(/\W+/g,"_")}.txt`;
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([S.maker.cv],{type:"text/plain"}));a.download=fn;a.click();URL.revokeObjectURL(a.href);
-}
 async function makeCV(){
-  S.co=$("#co").value.trim();S.role=$("#ro").value.trim();S.jd=$("#jd").value.trim();S.cv=$("#cvt").value.trim();
-  if(!S.co||!S.role||S.jd.length<60||S.cv.length<80)return toast("Fill company, role, JD and resume");
+  keepInputs();
+  if(!S.co||!S.role||S.jd.length<60||S.cv.length<120)return toast("Fill company, role, the job description and your resume");
   busy="m";render();const s=R();
-  try{const r=await ai(`You are an ATS optimisation expert. Tailor the candidate's resume for ${S.role} at ${S.co}. Rules: use exact keywords/phrases from the JD (skills, tools, verbs, role title) where the candidate's experience truthfully supports them; add a targeted summary and a Skills section mirroring the JD; reorder bullets by relevance; plain ATS-safe formatting (no tables/columns), standard headings, quantified bullets. NEVER invent experience, employers, degrees or metrics: where a keyword matters but is unsupported, use a bracketed placeholder like [add your real X experience] or list it under "missing". Return ONLY JSON: {"before":number (estimated ATS keyword match % of the original resume),"after":number,"keywords":[up to 15 JD keywords now included],"missing":[keywords the candidate lacks],"cv":"full tailored resume as plain text"}.\n\nJD:\n${S.jd.slice(0,5000)}\n\nResume:\n${S.cv.slice(0,7000)}`);
-    S.maker=r;S.made=true;busy="";commit(s,"Career milestone — tailored resume created");return}catch(e){}
+  try{S.maker=await genCV({role:S.role,co:S.co,jd:S.jd,mode:"tailor"});S.made=true;busy="";commit(s,"Career milestone — tailored resume created");return}
+  catch(e){toast("Couldn't generate the resume — please try again")}
   busy="";render();
+}
+
+// ---------- output + export ----------
+function cvOutput(m){
+  const unit=m.metric==="Resume score"?"/100":"%",chips=a=>(a||[]).map(k=>`<span class="chip" style="margin:2px">${esc(k)}</span>`).join("");
+  let h=`<div class="card"><div class="row" style="justify-content:flex-start;gap:22px"><div><div class="label">${esc(m.metric||"ATS match")} before</div><div class="num" style="font-size:24px">${esc(m.before)}${unit}</div></div><div style="color:var(--mut2)">${ic('arrow','ic')}</div><div><div class="label">after</div><div class="num" style="font-size:24px;color:var(--ac)">${esc(m.after)}${unit}</div></div></div>`;
+  if(m.keywords&&m.keywords.length)h+=`<div class="label" style="margin-top:12px">Job-description keywords now covered</div><p>${chips(m.keywords)}</p>`;
+  if(m.missing&&m.missing.length)h+=`<p class="mut" style="margin-top:8px">Still missing (add only if true): ${m.missing.map(esc).join(", ")}</p>`;
+  if(m.changes&&m.changes.length)h+=`<div class="label" style="margin-top:12px">What changed</div><ul>${m.changes.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>`;
+  h+=`</div>`;
+  if(m.flags&&m.flags.length)h+=`<div class="card" style="border-color:#d9a400"><h3>Verify before you send</h3><ul>${m.flags.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`;
+  h+=`<div class="card"><h3>${m.mode==="improve"?"Improved resume":"Tailored resume"}</h3><div style="margin-top:10px;background:#fff;color:#111;border:1px solid var(--bd);border-radius:10px;padding:18px;overflow:auto">${m.data?cvBodyHTML(m.data):`<pre style="background:#fff;border:0">${esc(m.cv)}</pre>`}</div><div class="row" style="margin-top:10px;justify-content:flex-start;gap:8px;flex-wrap:wrap"><button class="p" onclick="cvCopy()">Copy text</button><button class="s" onclick="cvDownload('doc')">Download Word (.doc)</button><button class="s" onclick="cvPrint()">Print / Save as PDF</button><button class="s" onclick="cvDownload('txt')">Download .txt</button></div><p class="mut" style="margin-top:8px">Items in [brackets] need your real details. Review every line before sending.</p></div>`;
+  return h;
+}
+const cvFileBase=()=>{const m=S.maker||{};const n=((m.data&&m.data.name)||"Resume").replace(/\W+/g,"_");return "Resume_"+n+(m.co?"_"+m.co.replace(/\W+/g,"_"):"")};
+function cvDocHTML(m){return `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc((m.data&&m.data.name)||"Resume")}</title><style>@page{size:A4;margin:16mm}body{margin:0;background:#fff}</style></head><body>${m.data?cvBodyHTML(m.data):`<pre>${esc(m.cv)}</pre>`}</body></html>`}
+function cvCopy(){navigator.clipboard&&navigator.clipboard.writeText(S.maker.cv).then(()=>toast("Copied"),()=>toast("Select and copy manually"))}
+function cvDownload(kind){
+  const m=S.maker;if(!m)return;
+  const blob=kind==="doc"?new Blob(["﻿",cvDocHTML(m)],{type:"application/msword"}):new Blob([m.cv],{type:"text/plain"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=cvFileBase()+(kind==="doc"?".doc":".txt");a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function cvPrint(){
+  const m=S.maker;if(!m)return;
+  const f=document.createElement("iframe");f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(f);
+  const d=f.contentWindow.document;d.open();d.write(cvDocHTML(m));d.close();
+  setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)},300);
 }
 
 // ---------- Human Career Calibration (bonus milestone) ----------
