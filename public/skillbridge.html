@@ -665,17 +665,37 @@ async function readCV(f){
   }catch(e){toast("Couldn't read that file — paste the text instead")}
   render();
 }
+const BUILD="2026-10-19.3";
+let cvNotice=null;
+function aiHint(m){
+  if(/configured/.test(m))return "Add AI_API_KEY (and AI_BASE_URL, AI_MODEL) as server environment variables on your host, then redeploy.";
+  if(/not found/.test(m))return "Your host only serves static files. The AI route (/api/public/ai) must run on a host that executes server code.";
+  if(/rejected/.test(m))return "The key is wrong, revoked, or the OpenAI account has no billing/credit. Create a new key and update the server variable.";
+  if(/reach the server/.test(m))return "Check your internet connection and that the site is online.";
+  if(/AI provider/.test(m))return "The server couldn't reach the AI provider. Check AI_BASE_URL.";
+  return "Try again; if it keeps failing, check the server logs.";
+}
+function cvStatusCard(){
+  const n=cvNotice;
+  return `<div class="card" style="padding:12px 14px"><div class="row"><div class="mut" style="font-size:12px">AI connection · build ${BUILD}</div><button class="s" ${busy==="t"?"disabled":""} onclick="testAI()">${busy==="t"?"Testing…":"Test AI connection"}</button></div>${n?`<div style="margin-top:8px;font-size:13.5px;color:${n.ok?"var(--ok)":"#d64545"}"><b>${n.ok?"✓":"✕"} ${esc(n.msg)}</b>${n.ok?"":`<div class="mut" style="margin-top:3px">${esc(aiHint(n.msg))}</div>`}</div>`:""}</div>`;
+}
+async function testAI(){
+  keepInputs();busy="t";render();
+  try{const r=await ai('Return ONLY this JSON: {"ok":true}',true);cvNotice=r&&typeof r==="object"&&!r.text?{ok:true,msg:"AI connection works"}:{ok:false,msg:"The AI replied, but not in a usable format"}}
+  catch(e){cvNotice={ok:false,msg:lastAIError||"AI request failed"}}
+  busy="";render();
+}
 async function aiJSON(prompt,ok,tries){
   tries=tries||2;let last;
   for(let i=0;i<tries;i++){
-    try{const r=await ai(prompt,true);if(r&&!r.text&&(!ok||ok(r)))return r;lastAIError="The AI returned an unusable answer — please try again";last=new Error(lastAIError)}catch(e){last=e;if(/not configured|not found|rejected|reach the server/.test(lastAIError))break}
+    try{const r=await ai(prompt,true);if(r&&!r.text&&(!ok||ok(r)))return r;lastAIError="The AI returned an unusable answer — please try again";last=new Error(lastAIError)}catch(e){last=e;if(/configured|not found|rejected|reach the server/.test(lastAIError))break}
   }
   throw last;
 }
 function resume(){
   $("#app").innerHTML=`<h1>Resume</h1><p class="mut" style="margin:6px 0 16px">Analyse your resume with measured checks, generate an improved version, or tailor it to a specific role.</p>
   <div class="pillrow"><button class="pill ${subR==='score'?'on':''}" onclick="keepInputs();subR='score';render()">Analyse &amp; improve</button><button class="pill ${subR==='tailor'?'on':''}" onclick="keepInputs();subR='tailor';render()">Tailor for a role</button></div>
-  <div id="rsub"></div>`;
+  ${cvStatusCard()}<div id="rsub"></div>`;
   subR==='score'?resumeScore():resumeTailor();
 }
 function resumeScore(){
@@ -703,7 +723,7 @@ async function scoreCV(){
   let q={};
   try{
     q=await aiJSON(`You are a strict recruiter and ATS expert reviewing a resume for the target domain "${S.domain||"general entry-level roles"}". The following facts were MEASURED from the resume by software and are accurate; do not contradict them: ${A.checks.map(c=>`${c.ok?"PASS":"FAIL"} ${c.label} (${c.detail})`).join("; ")}. Detected skills: ${A.facts.skills.join(", ")||"none"}. Write feedback that is specific to this resume's actual content. Return ONLY JSON: {"summary":"2 sentences","insight":"one practical sentence on the single highest-impact improvement","strengths":[3 strings referencing real content],"gaps":[4 strings],"courses":[{"title","provider"} x4 real, well-known courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 weak bullets taken verbatim from the resume, each rewritten with a metric placeholder like [X%] — never invent real numbers]}.\n\nResume:\n${S.cv.slice(0,7000)}`,o=>Array.isArray(o.gaps)&&Array.isArray(o.strengths));
-  }catch(e){toast((lastAIError||"AI unavailable")+" — showing measured results only")}
+  }catch(e){cvNotice={ok:false,msg:lastAIError||"AI unavailable"};toast((lastAIError||"AI unavailable")+" — showing measured results only")}
   const worst=failed[0];
   const r=Object.assign({},q,{score:A.score,ats:A.ats,impact:A.impact,skills:A.skills,formatting:A.formatting,experience:A.experience,checks:A.checks,
     summary:q.summary||`Your resume scores ${A.score}/100 on measured checks, with ${failed.length} of ${A.checks.length} checks needing attention.`,
@@ -739,8 +759,8 @@ async function improveCV(){
   if(S.cv.length<120)return toast("Paste or upload your full resume first");
   if(!S.domain)return toast("Enter a target domain / role first");
   busy="i";render();const s=R();
-  try{S.maker=await genCV({role:S.domain,mode:"improve"});busy="";commit(s,"Career milestone — resume improved");return}
-  catch(e){toast(lastAIError||"Couldn't generate the resume — please try again")}
+  try{S.maker=await genCV({role:S.domain,mode:"improve"});cvNotice={ok:true,msg:"Resume generated"};busy="";commit(s,"Career milestone — resume improved");return}
+  catch(e){cvNotice={ok:false,msg:lastAIError||"Couldn't generate the resume"};toast(lastAIError||"Couldn't generate the resume — please try again")}
   busy="";render();
 }
 function resumeTailor(){
@@ -754,8 +774,8 @@ async function makeCV(){
   keepInputs();
   if(!S.co||!S.role||S.jd.length<60||S.cv.length<120)return toast("Fill company, role, the job description and your resume");
   busy="m";render();const s=R();
-  try{S.maker=await genCV({role:S.role,co:S.co,jd:S.jd,mode:"tailor"});S.made=true;busy="";commit(s,"Career milestone — tailored resume created");return}
-  catch(e){toast(lastAIError||"Couldn't generate the resume — please try again")}
+  try{S.maker=await genCV({role:S.role,co:S.co,jd:S.jd,mode:"tailor"});cvNotice={ok:true,msg:"Resume generated"};S.made=true;busy="";commit(s,"Career milestone — tailored resume created");return}
+  catch(e){cvNotice={ok:false,msg:lastAIError||"Couldn't generate the resume"};toast(lastAIError||"Couldn't generate the resume — please try again")}
   busy="";render();
 }
 
