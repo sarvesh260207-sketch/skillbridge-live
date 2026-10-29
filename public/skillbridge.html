@@ -693,10 +693,73 @@ async function aiJSON(prompt,ok,tries){
   throw last;
 }
 function resume(){
-  $("#app").innerHTML=`<h1>Resume</h1><p class="mut" style="margin:6px 0 16px">Analyse your resume with measured checks, generate an improved version, or tailor it to a specific role.</p>
-  <div class="pillrow"><button class="pill ${subR==='score'?'on':''}" onclick="keepInputs();subR='score';render()">Analyse &amp; improve</button><button class="pill ${subR==='tailor'?'on':''}" onclick="keepInputs();subR='tailor';render()">Tailor for a role</button></div>
+  $("#app").innerHTML=`<h1>Resume</h1><p class="mut" style="margin:6px 0 16px">Analyse your resume with measured checks, generate an improved version, tailor it to a role, or practise an AI mock interview about it.</p>
+  <div class="pillrow"><button class="pill ${subR==='score'?'on':''}" onclick="keepInputs();subR='score';render()">Analyse &amp; improve</button><button class="pill ${subR==='tailor'?'on':''}" onclick="keepInputs();subR='tailor';render()">Tailor for a role</button><button class="pill ${subR==='interview'?'on':''}" onclick="keepInputs();subR='interview';render()">Mock interview</button></div>
   ${cvStatusCard()}<div id="rsub"></div>`;
-  subR==='score'?resumeScore():resumeTailor();
+  ({score:resumeScore,tailor:resumeTailor,interview:resumeInterview})[subR]();
+}
+// ---------- AI mock interview ----------
+let interview=null,iTimer=null;
+const INTERVIEW_SECONDS=180;
+function resumeInterview(){
+  if(!has("cv"))return paywall("cv","The mock interview is locked","Unlock an AI mock interview about your resume, timed to 3 minutes, for ₹49.");
+  if(!S.cvRes){$("#app").innerHTML+=`<div class="card lockpanel"><div class="iconbox">${ic("check")}</div><h2>Analyse your resume first</h2><p class="mut" style="max-width:340px;margin:8px auto 18px">The interviewer needs your resume and target role to ask relevant questions.</p><button class="p" onclick="subR='score';render()">Go to Analyse &amp; improve</button></div>`;return}
+  if(!interview){$("#app").innerHTML+=`<div class="card"><h3>3-minute AI mock interview</h3><p class="mut" style="margin-top:6px">A focused, timed interview about your resume for <b>${esc(S.domain||"your target role")}</b>. The interviewer asks one question at a time based on your resume and your answers — type your reply and send it, like a real chat interview. When the clock hits zero (or you end early), you'll get honest feedback.</p><button class="p" style="margin-top:10px" ${busy==="iv"?"disabled":""} onclick="startInterview()">${busy==="iv"?"Preparing interviewer…":"Start 3-minute interview"}</button></div>`;return}
+  renderInterview();
+}
+async function startInterview(){
+  busy="iv";render();
+  interview={msgs:[],left:INTERVIEW_SECONDS,ended:false,feedback:null};
+  try{
+    const q=await aiJSON(`You are an experienced interviewer conducting a short, focused job interview about a candidate's resume, for the role "${S.domain||"this role"}". Ask exactly ONE strong opening question based on their resume — specific to their actual background, not generic. Return ONLY JSON: {"question":"..."}.\n\nResume:\n${S.cv.slice(0,5000)}`,o=>typeof o.question==="string");
+    interview.msgs.push({role:"ai",text:q.question});
+  }catch(e){interview.msgs.push({role:"ai",text:"Tell me about the project or experience on your resume you're most proud of, and why."});toast((lastAIError||"AI unavailable")+" — using a fallback opening question")}
+  busy="";render();armInterviewTimer();
+}
+function armInterviewTimer(){
+  clearInterval(iTimer);
+  iTimer=setInterval(()=>{
+    if(!interview||interview.ended)return clearInterval(iTimer);
+    interview.left--;const el=$("#ivleft");if(el)el.textContent=fmtTime(interview.left);
+    if(interview.left<=0){clearInterval(iTimer);finalizeInterview()}
+  },1000);
+}
+async function sendInterviewReply(){
+  const box=$("#ivreply");if(!box)return;const text=box.value.trim();
+  if(!text)return toast("Type your answer first");
+  if(busy)return;
+  interview.msgs.push({role:"user",text});busy="iv2";renderInterview();
+  const transcript=interview.msgs.map(m=>`${m.role==="ai"?"Interviewer":"Candidate"}: ${m.text}`).join("\n");
+  try{
+    const q=await aiJSON(`You are an experienced interviewer continuing a short job interview about a candidate's resume, for the role "${S.domain||"this role"}". Based on the conversation so far, ask exactly ONE sharp, natural follow-up question — build on their last answer, probe deeper, or move to a new relevant angle from their resume. Keep it realistic and not repetitive. Return ONLY JSON: {"question":"..."}.\n\nResume:\n${S.cv.slice(0,4000)}\n\nConversation so far:\n${transcript.slice(-4000)}`,o=>typeof o.question==="string");
+    interview.msgs.push({role:"ai",text:q.question});
+  }catch(e){interview.msgs.push({role:"ai",text:"Good — can you walk me through one specific challenge you faced there and how you handled it?"});toast((lastAIError||"AI unavailable")+" — using a fallback question")}
+  busy="";renderInterview();
+}
+async function finalizeInterview(){
+  if(!interview||interview.ended)return;
+  interview.ended=true;busy="iv3";renderInterview();
+  const transcript=interview.msgs.map(m=>`${m.role==="ai"?"Interviewer":"Candidate"}: ${m.text}`).join("\n");
+  const s=R();
+  try{
+    const f=await aiJSON(`The 3-minute mock interview has ended. As an experienced interviewer, give honest, specific feedback on the candidate's answers — not generic advice. Return ONLY JSON: {"strengths":[3 strings referencing specific answers],"improvements":[3 strings: specific, actionable],"verdict":"2 sentence overall honest assessment"}.\n\nTarget role: ${S.domain||"general entry-level roles"}\nResume:\n${S.cv.slice(0,4000)}\n\nFull transcript:\n${transcript.slice(-6000)}`,o=>Array.isArray(o.strengths));
+    interview.feedback=f;
+  }catch(e){interview.feedback={strengths:[],improvements:[],verdict:lastAIError||"AI feedback unavailable — your transcript is saved below."}}
+  busy="";if(!S.calib)S.interviewDone=true;commit(s,"Career milestone — mock interview completed");
+}
+function renderInterview(){
+  if(!interview)return resumeInterview();
+  let h=`<div class="card"><div class="row"><h3>AI mock interview · ${esc(S.domain||"your target role")}</h3>${!interview.ended?`<span class="chip">${ic('clock','ic')} <span id="ivleft">${fmtTime(interview.left)}</span></span>`:`<span class="badge">Ended</span>`}</div></div>`;
+  h+=`<div class="card">`+interview.msgs.map(m=>`<div style="margin:10px 0"><div class="label" style="color:${m.role==="ai"?"var(--ac)":"var(--mut2)"}">${m.role==="ai"?"Interviewer":"You"}</div><p style="margin-top:3px">${esc(m.text)}</p></div>`).join("");
+  if(busy==="iv2"||busy==="iv3")h+=`<p class="mut">Interviewer is thinking…</p>`;
+  if(!interview.ended)h+=`<textarea id="ivreply" placeholder="Type your answer…" style="min-height:80px"></textarea><div class="row" style="justify-content:flex-start;gap:8px"><button class="p" ${busy?"disabled":""} onclick="sendInterviewReply()">Send answer</button><button class="s" ${busy?"disabled":""} onclick="finalizeInterview()">End interview now</button></div>`;
+  h+=`</div>`;
+  if(interview.ended&&interview.feedback){const f=interview.feedback;
+    const L=(t,a)=>a&&a.length?`<div class="card"><h3>${t}</h3><ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";
+    h+=`<div class="card" style="border-color:var(--ac)"><h3>Overall</h3><p class="mut" style="margin-top:6px">${esc(f.verdict)}</p></div>`+L("What went well",f.strengths)+L("What to improve",f.improvements);
+    h+=`<button class="s" onclick="interview=null;render()">Start a new interview</button>`;
+  }
+  $("#app").innerHTML+=h;
 }
 function resumeScore(){
   if(!has("cv"))return paywall("cv","Resume scoring is locked","Unlock an ATS readiness score plus tailored course and project suggestions for ₹49.");
@@ -710,7 +773,7 @@ function resumeScore(){
     h+=`<div class="card"><h3>Generate an improved resume</h3><p class="mut" style="margin-top:4px">Rewrites your resume for ${esc(S.domain||"your target role")} using only your real experience: stronger action-verb bullets, ATS-safe layout, and a fact-check pass that flags anything not in your original.</p><button class="p" style="margin-top:8px" ${busy==="i"?"disabled":""} onclick="improveCV()">${busy==="i"?"Writing…":"Generate improved resume"}</button></div>`;
     if(S.maker&&S.maker.mode==="improve")h+=cvOutput(S.maker);
     const L=(t,a,f)=>a&&a.length?`<div class="card"><h3>${t}</h3><ul>${a.map(f).join("")}</ul></div>`:"";
-    h+=L("Strengths",r.strengths,x=>`<li>${esc(x)}</li>`)+L("Gaps to address",r.gaps,x=>`<li>${esc(x)}</li>`)+L("Recommended courses",r.courses,x=>`<li><b>${esc(x.title)}</b> — ${esc(x.provider)}</li>`)+L("Recommended projects",r.projects,x=>`<li><b>${esc(x.title)}</b>: ${esc(x.desc)}</li>`)+L("Stronger bullet rewrites",r.bullets,x=>`<li>${esc(x)}</li>`);
+    h+=L("Strengths",r.strengths,x=>`<li>${esc(x)}</li>`)+L("Weak points &amp; failure points",r.gaps,x=>`<li>${esc(x)}</li>`)+L("Points to remove",r.toRemove,x=>`<li>${esc(x)}</li>`)+L(`Recommended skills to add for ${esc(S.domain||"this role")}`,r.recommendedForRole,x=>`<li>${esc(x)}</li>`)+L("Recommended courses",r.courses,x=>`<li><b>${esc(x.title)}</b> — ${esc(x.provider)}</li>`)+L("Recommended projects",r.projects,x=>`<li><b>${esc(x.title)}</b>: ${esc(x.desc)}</li>`)+L("Stronger bullet rewrites",r.bullets,x=>`<li>${esc(x)}</li>`);
   }
   $("#app").innerHTML+=h;
 }
@@ -722,7 +785,7 @@ async function scoreCV(){
   const failed=A.checks.filter(c=>!c.ok);
   let q={};
   try{
-    q=await aiJSON(`You are a strict recruiter and ATS expert reviewing a resume for the target domain "${S.domain||"general entry-level roles"}". The following facts were MEASURED from the resume by software and are accurate; do not contradict them: ${A.checks.map(c=>`${c.ok?"PASS":"FAIL"} ${c.label} (${c.detail})`).join("; ")}. Detected skills: ${A.facts.skills.join(", ")||"none"}. Write feedback that is specific to this resume's actual content. Return ONLY JSON: {"summary":"2 sentences","insight":"one practical sentence on the single highest-impact improvement","strengths":[3 strings referencing real content],"gaps":[4 strings],"courses":[{"title","provider"} x4 real, well-known courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 weak bullets taken verbatim from the resume, each rewritten with a metric placeholder like [X%] — never invent real numbers]}.\n\nResume:\n${S.cv.slice(0,7000)}`,o=>Array.isArray(o.gaps)&&Array.isArray(o.strengths));
+    q=await aiJSON(`You are a strict recruiter and ATS expert reviewing a resume for the target domain "${S.domain||"general entry-level roles"}". The following facts were MEASURED from the resume by software and are accurate; do not contradict them: ${A.checks.map(c=>`${c.ok?"PASS":"FAIL"} ${c.label} (${c.detail})`).join("; ")}. Detected skills: ${A.facts.skills.join(", ")||"none"}. Write feedback that is specific to this resume's actual content. Return ONLY JSON: {"summary":"2 sentences","insight":"one practical sentence on the single highest-impact improvement","strengths":[3 strings referencing real content],"gaps":[4 strings describing WEAK or FAILURE points — things actively hurting this resume],"toRemove":[2-3 strings: specific lines, phrases, or sections that should be cut because they are filler, redundant, or actively weaken the resume],"recommendedForRole":[4-6 strings: specific skills, tools, or certifications this candidate is missing that are commonly expected for "${S.domain||"this type of role"}" and should be added],"courses":[{"title","provider"} x4 real, well-known courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 weak bullets taken verbatim from the resume, each rewritten with a metric placeholder like [X%] — never invent real numbers]}.\n\nResume:\n${S.cv.slice(0,7000)}`,o=>Array.isArray(o.gaps)&&Array.isArray(o.strengths));
   }catch(e){cvNotice={ok:false,msg:lastAIError||"AI unavailable"};toast((lastAIError||"AI unavailable")+" — showing measured results only")}
   const worst=failed[0];
   const r=Object.assign({},q,{score:A.score,ats:A.ats,impact:A.impact,skills:A.skills,formatting:A.formatting,experience:A.experience,checks:A.checks,
