@@ -162,26 +162,44 @@ const R=()=>Math.min(100,10+nD()*2+nC()*3+nT()*4+Math.round((S.cvBest||0)*.2)+(S
 const readyMsg=r=>r<25?"You're just getting started — build your foundation.":r<50?"You're making solid progress toward being interview-ready.":r<75?"Your profile is becoming interview-ready.":r<100?"Almost there — a few milestones left.":"You're fully career-ready. Keep your resume current.";
 function commit(prev,label){save();const n=R();if(n>prev)toast(`${label} — readiness now ${n}%`);render()}
 
-let lastAIError="";
+let lastAIError="",lastAIInfo=null,lastAIMeta="";
+const PROV={openai:"OpenAI",gemini:"Google Gemini",lovable:"Lovable AI",custom:"the AI provider"};
+const provName=b=>PROV[b&&b.provider]||"the AI provider";
+function aiFail(msg,info){const e=new Error(msg);e.info=info||{};return e}
+// Turns the server's JSON error into {msg, info}. Only specific, evidence-based messages: a 429 is
+// NOT assumed to be a temporary rate limit — quota/billing is reported separately.
+function aiErr(r,b){
+  const n=provName(b),info={code:b.code||"",status:b.status||r.status,provider:b.provider,model:b.model,keySource:b.keySource,providerCode:b.providerCode,limitKind:b.limitKind,retryAfter:b.retryAfter,limits:b.limits,retried:b.retried};
+  if(r.status===404||r.status===405)return aiFail("AI endpoint not found — this host only serves static files, so the AI server route isn't running",{...info,code:"notfound"});
+  if(!b.code&&r.status===429)return aiFail("Your host (not the AI provider) blocked this request with HTTP 429",{...info,code:"host_429"});
+  const M={
+    no_key:"AI isn't configured on this server (missing API key)",
+    bad_key:"The AI API key was rejected by "+n,
+    region_blocked:n+" doesn't serve the region this server runs in",
+    unreachable:"The server couldn't reach the AI provider",
+    quota:n+" says this account is out of credit or over its spending limit",
+    rate_limited:n+" is rate-limiting requests"+(b.retried?" (already retried once)":""),
+    too_large:"This request is larger than the account's per-minute token limit for the model",
+    bad_model:"The AI model \""+(b.model||"")+"\" isn't available for this key (check AI_MODEL)",
+    bad_request:n+" rejected the request as invalid",
+    provider_unavailable:n+" is temporarily unavailable (server error)",
+    empty:"The AI provider sent an empty or unreadable answer",bad_response:"The AI provider sent an empty or unreadable answer"
+  };
+  return aiFail(M[b.code]||((b.error||("AI request failed ("+r.status+")"))+(b.providerCode?" — "+b.providerCode:"")),info);
+}
 async function ai(prompt,q){
   try{
     let r;
     try{r=await fetch("/api/public/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})})}
-    catch(e){throw new Error("Can't reach the server — check your internet connection")}
+    catch(e){throw aiFail("Can't reach the server — check your internet connection",{code:"network"})}
     if(!r.ok){
       let b={};try{b=await r.json()}catch(e){}
-      if(r.status===404||r.status===405)throw new Error("AI endpoint not found — this host only serves static files, so the AI server route isn't running");
-      if(b.code==="no_key")throw new Error("AI isn't configured on this server (missing API key)");
-      if(b.code==="bad_key")throw new Error("The AI API key was rejected — check it on the server");
-      if(b.code==="unreachable")throw new Error("The server couldn't reach the AI provider");
-      if(b.code==="quota")throw new Error("The AI account is out of credit (OpenAI insufficient_quota)");
-      if(b.code==="rate_limited")throw new Error("The AI provider is rate-limiting requests — wait a moment and retry");
-      if(b.code==="bad_model")throw new Error("The AI model \""+(b.model||"")+"\" isn't available for this key (check AI_MODEL)");
-      if(b.code==="empty"||b.code==="bad_response")throw new Error("The AI provider sent an empty or unreadable answer");
-      throw new Error((b.error||("AI request failed ("+r.status+")"))+(b.providerCode?" — "+b.providerCode:""));
+      throw aiErr(r,b);
     }
-    lastAIError="";return await r.json();
-  }catch(e){lastAIError=e.message||"AI request failed";if(!q)toast(lastAIError);throw e}
+    lastAIError="";lastAIInfo=null;
+    lastAIMeta=[r.headers.get("x-ai-provider"),r.headers.get("x-ai-model"),r.headers.get("x-ai-key-source")].filter(Boolean).join(" · ");
+    return await r.json();
+  }catch(e){lastAIError=e.message||"AI request failed";lastAIInfo=e.info||{};if(!q)toast(lastAIError);throw e}
 }
 
 // ---------- learning content ----------
@@ -669,33 +687,59 @@ async function readCV(f){
   }catch(e){toast("Couldn't read that file — paste the text instead")}
   render();
 }
-const BUILD="2026-10-29.1";
+const BUILD="2026-10-29.2";
 let cvNotice=null;
-function aiHint(m){
-  if(/configured/.test(m))return "Add OPENAI_API_KEY as a server environment variable on your host (Vercel → Settings → Environment Variables), then redeploy.";
-  if(/not found/.test(m))return "Your host only serves static files. The AI route (/api/public/ai) must run on a host that executes server code.";
-  if(/rejected/.test(m))return "The key is wrong or revoked, or it was sent to the wrong provider. Check OPENAI_API_KEY (and AI_BASE_URL if set), then redeploy.";
-  if(/out of credit/.test(m))return "Add billing/credit to the OpenAI account, or use a key from an account that has it.";
-  if(/rate-limiting/.test(m))return "Too many requests. Wait a minute and try again.";
-  if(/isn't available/.test(m))return "Set AI_MODEL to a model your key can use (for example gpt-4o-mini), then redeploy.";
-  if(/reach the server/.test(m))return "Check your internet connection and that the site is online.";
-  if(/AI provider/.test(m))return "Check the server logs on your host for the provider's exact error.";
-  return "Try again; if it keeps failing, check the server logs.";
+function aiHint(i){
+  i=i||{};const n=PROV[i.provider]||"the provider";
+  switch(i.code){
+    case"no_key":return"Add OPENAI_API_KEY as a server environment variable on your host (Vercel → Settings → Environment Variables, Production), then redeploy.";
+    case"notfound":return"Your host only serves static files. The AI route (/api/public/ai) must run on a host that executes server code.";
+    case"host_429":return"Check Vercel → Firewall / Attack Challenge Mode and any rate-limit rules. The request never reached OpenAI.";
+    case"bad_key":return"The key is wrong, revoked, has stray quotes/spaces, or belongs to a different provider. Create a new key, update "+(i.keySource||"OPENAI_API_KEY")+" and redeploy.";
+    case"region_blocked":return"Move the Vercel function region to a supported country, or use a different provider.";
+    case"quota":return i.provider==="openai"?"Open platform.openai.com → Billing: add prepaid credit or raise the monthly budget (ChatGPT Plus is not API credit). The same key works again after a few minutes — no redeploy needed.":"Check the plan, billing and quota for the account that owns this key.";
+    case"rate_limited":{
+      const lim=i.limits&&i.limits.limitRequests,w=i.retryAfter?"Wait about "+i.retryAfter+"s and press Test once.":"Wait a minute and press Test once.";
+      return w+(lim&&lim<=10?" This account allows only "+lim+" requests/min — a low (new or unfunded) tier. Adding prepaid credit raises it.":"")+(i.limitKind==="tokens"?" The limit hit is tokens-per-minute.":"");
+    }
+    case"too_large":return"Use a shorter resume, or raise the account's tokens-per-minute tier (billing), or set AI_MODEL to a model with a higher limit.";
+    case"bad_model":return"Set AI_MODEL to a model this key can use (for example gpt-4o-mini), then redeploy.";
+    case"bad_request":return"Check AI_MODEL and AI_BASE_URL; the exact reason is in the server logs (search \"AI provider failed\").";
+    case"provider_unavailable":return n+" had a server error (already retried once). Try again in a minute; see status.openai.com if it persists.";
+    case"unreachable":return"Check AI_BASE_URL and that the host can make outbound requests.";
+    case"network":return"Check your internet connection and that the site is online.";
+    case"empty":case"bad_response":return"Try once more; if it repeats, check the server logs.";
+  }
+  return"Check the server logs on your host for the exact error (search \"AI provider failed\").";
 }
+function aiDiag(i){
+  if(!i||!i.code)return"";
+  const bits=[];
+  if(i.provider)bits.push(i.provider);if(i.model)bits.push(i.model);if(i.keySource)bits.push("key: "+i.keySource);
+  if(i.status)bits.push("HTTP "+i.status);if(i.providerCode)bits.push(i.providerCode);bits.push(i.code);
+  return bits.join(" · ");
+}
+let testUntil=0;
 function cvStatusCard(){
-  const n=cvNotice;
-  return `<div class="card" style="padding:12px 14px"><div class="row"><div class="mut" style="font-size:12px">AI connection · build ${BUILD}</div><button class="s" ${busy==="t"?"disabled":""} onclick="testAI()">${busy==="t"?"Testing…":"Test AI connection"}</button></div>${n?`<div style="margin-top:8px;font-size:13.5px;color:${n.ok?"var(--ok)":"#d64545"}"><b>${n.ok?"✓":"✕"} ${esc(n.msg)}</b>${n.ok?"":`<div class="mut" style="margin-top:3px">${esc(aiHint(n.msg))}</div>`}</div>`:""}</div>`;
+  const n=cvNotice,cool=testUntil>Date.now();
+  return `<div class="card" style="padding:12px 14px"><div class="row"><div class="mut" style="font-size:12px">AI connection · build ${BUILD}</div><button class="s" ${busy==="t"||cool?"disabled":""} onclick="testAI()">${busy==="t"?"Testing…":cool?"Wait before retrying":"Test AI connection"}</button></div>${n?`<div style="margin-top:8px;font-size:13.5px;color:${n.ok?"var(--ok)":"#d64545"}"><b>${n.ok?"✓":"✕"} ${esc(n.msg)}</b>${n.ok?(n.meta?`<div class="mut" style="margin-top:3px;font-size:12px">${esc(n.meta)}</div>`:""):`<div class="mut" style="margin-top:3px">${esc(aiHint(n.info))}</div><div class="mut" style="margin-top:3px;font-size:12px">${esc(aiDiag(n.info))}</div>`}</div>`:""}</div>`;
 }
 async function testAI(){
+  if(busy==="t"||testUntil>Date.now())return;
   keepInputs();busy="t";render();
-  try{const r=await ai('Return ONLY this JSON: {"ok":true}',true);cvNotice=r&&typeof r==="object"&&!r.text?{ok:true,msg:"AI connection works"}:{ok:false,msg:"The AI replied, but not in a usable format"}}
-  catch(e){cvNotice={ok:false,msg:lastAIError||"AI request failed"}}
+  try{const r=await ai('Return ONLY this JSON: {"ok":true}',true);cvNotice=r&&typeof r==="object"&&!r.text?{ok:true,msg:"AI connection works",meta:lastAIMeta}:{ok:false,msg:"The AI replied, but not in a usable format",info:{code:"empty"}}}
+  catch(e){const i=lastAIInfo||{};cvNotice={ok:false,msg:lastAIError||"AI request failed",info:i};
+    if(i.code==="rate_limited"||i.code==="host_429"){const ms=Math.min(120,Math.max(10,i.retryAfter||20))*1000;testUntil=Date.now()+ms;setTimeout(()=>{if(testUntil<=Date.now())render()},ms+50)}}
   busy="";render();
 }
 async function aiJSON(prompt,ok,tries){
   tries=tries||2;let last;
   for(let i=0;i<tries;i++){
-    try{const r=await ai(prompt,true);if(r&&!r.text&&(!ok||ok(r)))return r;lastAIError="The AI returned an unusable answer — please try again";last=new Error(lastAIError)}catch(e){last=e;if(/configured|not found|rejected|reach the server|out of credit|isn't available/.test(lastAIError))break}
+    try{const r=await ai(prompt,true);if(r&&!r.text&&(!ok||ok(r)))return r;lastAIError="The AI returned an unusable answer — please try again";lastAIInfo={code:"empty"};last=new Error(lastAIError)}
+    catch(e){last=e;
+      // Retry only when the model's *answer* was unusable. Never re-send after a provider/config failure
+      // (key, quota, rate limit, model, network): the server already did its own bounded retry.
+      const c=lastAIInfo&&lastAIInfo.code;if(c&&c!=="empty"&&c!=="bad_response")break}
   }
   throw last;
 }
@@ -793,7 +837,7 @@ async function scoreCV(){
   let q={};
   try{
     q=await aiJSON(`You are a strict recruiter and ATS expert reviewing a resume for the target domain "${S.domain||"general entry-level roles"}". The following facts were MEASURED from the resume by software and are accurate; do not contradict them: ${A.checks.map(c=>`${c.ok?"PASS":"FAIL"} ${c.label} (${c.detail})`).join("; ")}. Detected skills: ${A.facts.skills.join(", ")||"none"}. Write feedback that is specific to this resume's actual content. Return ONLY JSON: {"summary":"2 sentences","insight":"one practical sentence on the single highest-impact improvement","strengths":[3 strings referencing real content],"gaps":[4 strings describing WEAK or FAILURE points — things actively hurting this resume],"toRemove":[2-3 strings: specific lines, phrases, or sections that should be cut because they are filler, redundant, or actively weaken the resume],"recommendedForRole":[4-6 strings: specific skills, tools, or certifications this candidate is missing that are commonly expected for "${S.domain||"this type of role"}" and should be added],"courses":[{"title","provider"} x4 real, well-known courses],"projects":[{"title","desc"} x3 resume-worthy projects with tools and a measurable outcome],"bullets":[3 weak bullets taken verbatim from the resume, each rewritten with a metric placeholder like [X%] — never invent real numbers]}.\n\nResume:\n${S.cv.slice(0,7000)}`,o=>Array.isArray(o.gaps)&&Array.isArray(o.strengths));
-  }catch(e){cvNotice={ok:false,msg:lastAIError||"AI unavailable"};toast((lastAIError||"AI unavailable")+" — showing measured results only")}
+  }catch(e){cvNotice={ok:false,msg:lastAIError||"AI unavailable",info:lastAIInfo};toast((lastAIError||"AI unavailable")+" — showing measured results only")}
   const worst=failed[0];
   const r=Object.assign({},q,{score:A.score,ats:A.ats,impact:A.impact,skills:A.skills,formatting:A.formatting,experience:A.experience,checks:A.checks,
     summary:q.summary||`Your resume scores ${A.score}/100 on measured checks, with ${failed.length} of ${A.checks.length} checks needing attention.`,
@@ -830,7 +874,7 @@ async function improveCV(){
   if(!S.domain)return toast("Enter a target domain / role first");
   busy="i";render();const s=R();
   try{S.maker=await genCV({role:S.domain,mode:"improve"});cvNotice={ok:true,msg:"Resume generated"};busy="";commit(s,"Career milestone — resume improved");return}
-  catch(e){cvNotice={ok:false,msg:lastAIError||"Couldn't generate the resume"};toast(lastAIError||"Couldn't generate the resume — please try again")}
+  catch(e){cvNotice={ok:false,msg:lastAIError||"Couldn't generate the resume",info:lastAIInfo};toast(lastAIError||"Couldn't generate the resume — please try again")}
   busy="";render();
 }
 function resumeTailor(){
@@ -845,7 +889,7 @@ async function makeCV(){
   if(!S.co||!S.role||S.jd.length<60||S.cv.length<120)return toast("Fill company, role, the job description and your resume");
   busy="m";render();const s=R();
   try{S.maker=await genCV({role:S.role,co:S.co,jd:S.jd,mode:"tailor"});cvNotice={ok:true,msg:"Resume generated"};S.made=true;busy="";commit(s,"Career milestone — tailored resume created");return}
-  catch(e){cvNotice={ok:false,msg:lastAIError||"Couldn't generate the resume"};toast(lastAIError||"Couldn't generate the resume — please try again")}
+  catch(e){cvNotice={ok:false,msg:lastAIError||"Couldn't generate the resume",info:lastAIInfo};toast(lastAIError||"Couldn't generate the resume — please try again")}
   busy="";render();
 }
 
