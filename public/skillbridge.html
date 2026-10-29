@@ -174,7 +174,11 @@ async function ai(prompt,q){
       if(b.code==="no_key")throw new Error("AI isn't configured on this server (missing API key)");
       if(b.code==="bad_key")throw new Error("The AI API key was rejected — check it on the server");
       if(b.code==="unreachable")throw new Error("The server couldn't reach the AI provider");
-      throw new Error(b.error||("AI request failed ("+r.status+")"));
+      if(b.code==="quota")throw new Error("The AI account is out of credit (OpenAI insufficient_quota)");
+      if(b.code==="rate_limited")throw new Error("The AI provider is rate-limiting requests — wait a moment and retry");
+      if(b.code==="bad_model")throw new Error("The AI model \""+(b.model||"")+"\" isn't available for this key (check AI_MODEL)");
+      if(b.code==="empty"||b.code==="bad_response")throw new Error("The AI provider sent an empty or unreadable answer");
+      throw new Error((b.error||("AI request failed ("+r.status+")"))+(b.providerCode?" — "+b.providerCode:""));
     }
     lastAIError="";return await r.json();
   }catch(e){lastAIError=e.message||"AI request failed";if(!q)toast(lastAIError);throw e}
@@ -665,14 +669,17 @@ async function readCV(f){
   }catch(e){toast("Couldn't read that file — paste the text instead")}
   render();
 }
-const BUILD="2026-10-19.3";
+const BUILD="2026-10-29.1";
 let cvNotice=null;
 function aiHint(m){
-  if(/configured/.test(m))return "Add AI_API_KEY (and AI_BASE_URL, AI_MODEL) as server environment variables on your host, then redeploy.";
+  if(/configured/.test(m))return "Add OPENAI_API_KEY as a server environment variable on your host (Vercel → Settings → Environment Variables), then redeploy.";
   if(/not found/.test(m))return "Your host only serves static files. The AI route (/api/public/ai) must run on a host that executes server code.";
-  if(/rejected/.test(m))return "The key is wrong, revoked, or the OpenAI account has no billing/credit. Create a new key and update the server variable.";
+  if(/rejected/.test(m))return "The key is wrong or revoked, or it was sent to the wrong provider. Check OPENAI_API_KEY (and AI_BASE_URL if set), then redeploy.";
+  if(/out of credit/.test(m))return "Add billing/credit to the OpenAI account, or use a key from an account that has it.";
+  if(/rate-limiting/.test(m))return "Too many requests. Wait a minute and try again.";
+  if(/isn't available/.test(m))return "Set AI_MODEL to a model your key can use (for example gpt-4o-mini), then redeploy.";
   if(/reach the server/.test(m))return "Check your internet connection and that the site is online.";
-  if(/AI provider/.test(m))return "The server couldn't reach the AI provider. Check AI_BASE_URL.";
+  if(/AI provider/.test(m))return "Check the server logs on your host for the provider's exact error.";
   return "Try again; if it keeps failing, check the server logs.";
 }
 function cvStatusCard(){
@@ -688,7 +695,7 @@ async function testAI(){
 async function aiJSON(prompt,ok,tries){
   tries=tries||2;let last;
   for(let i=0;i<tries;i++){
-    try{const r=await ai(prompt,true);if(r&&!r.text&&(!ok||ok(r)))return r;lastAIError="The AI returned an unusable answer — please try again";last=new Error(lastAIError)}catch(e){last=e;if(/configured|not found|rejected|reach the server/.test(lastAIError))break}
+    try{const r=await ai(prompt,true);if(r&&!r.text&&(!ok||ok(r)))return r;lastAIError="The AI returned an unusable answer — please try again";last=new Error(lastAIError)}catch(e){last=e;if(/configured|not found|rejected|reach the server|out of credit|isn't available/.test(lastAIError))break}
   }
   throw last;
 }
